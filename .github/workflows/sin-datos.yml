@@ -1,0 +1,16 @@
+name: Bloqueo de datos de pacientes
+on: [push, pull_request]
+jobs:
+  revisar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Buscar respaldos o archivos de datos
+        run: |
+          prohibidos=$(git ls-files | grep -Ei '\.(json|csv|xlsx|xls|pdf|docx)$|respaldo' || true)
+          if [ -n "$prohibidos" ]; then
+            echo "::error::Hay archivos de datos en el repositorio. Bórralos y revisa el historial:"
+            echo "$prohibidos"
+            exit 1
+          fi
+          echo "Sin archivos de datos."

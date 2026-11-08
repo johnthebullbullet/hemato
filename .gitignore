@@ -1,0 +1,7 @@
+# Nunca subir respaldos ni datos de pacientes
+*.json
+*.csv
+*.xlsx
+*.pdf
+respaldo*
+hemato_respaldo*
