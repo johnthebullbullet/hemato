@@ -14,7 +14,7 @@ function filaDe(t){const u=nrm(t).trim();for(const [re,k] of FILAS)if(re.test(u)
 const dig=s=>(String(s).match(/\d/g)||[]).join('');
 // ---------- lectura de cada tipo de valor ----------
 const LEE={
- hora(t){const d=dig(t);if(/^0?8/.test(d))return '08';if(/^12/.test(d))return '12';if(/^16/.test(d))return '16';if(/^20/.test(d))return '20';if(/^(24|00)/.test(d))return '24';if(/^0?4/.test(d))return '04';return null},
+ hora(t){const d=dig(t);if(!d)return null;let h=d.length>=2?+d.slice(0,2):+d;if(h>24&&d.length>=1)h=+d[0];if(h>24)return null;return String(h===0?24:h).padStart(2,'0')},
  fc(t){if(/\//.test(t))return null;const d=dig(t);if(!d)return null;let v=+d.slice(0,3);if(d.length>=3&&v>=30&&v<=220)return {v,d:d.length>3&&!/^\d{3}\D/.test(t)};v=+d.slice(0,2);return v>=30&&v<=220?{v,d:d.length>2}:null},
  pa(t,ctx){let c=[];const m=t.match(/(\d{2,3})\s*[\/|1lI]\s*(\d{2,3})/);
   const s=dig(t);if(t.includes('/')){const p=t.split('/');const a=+dig(p[0]),b=+dig(p[1]);if(a&&b)c.push([a,b,0])}
@@ -23,7 +23,7 @@ const LEE={
   const pam=ctx&&ctx.pam;if(pam){c.sort((x,y)=>Math.abs((x[0]+2*x[1])/3-pam)-Math.abs((y[0]+2*y[1])/3-pam)||x[2]-y[2]);const k=c[0];const err=Math.abs((k[0]+2*k[1])/3-pam);return {v:k[0]+'/'+k[1],s:k[0],dd:k[1],d:err>6||k[2]>1}}
   c.sort((x,y)=>x[2]-y[2]);return {v:c[0][0]+'/'+c[0][1],s:c[0][0],dd:c[0][1],d:c[0][2]>0||c.length>1}},
  pam(t){const d=dig(t);if(!d)return null;const v=+d;if(v>=40&&v<=160)return {v,d:false};if(d.length===3){const a=+(d[0]+d[2]);if(a>=40&&a<=160)return {v:a,d:true}}return null},
- fr(t){const d=dig(t);const v=+d.slice(0,2);return d&&v>=6&&v<=60?{v,d:d.length>2}:null},
+ fr(t){const d=dig(t);const v=+d.slice(0,2);return d&&v>=8&&v<=60?{v,d:d.length>2}:null},
  t(t){const m=t.match(/(3\d|4[0-2])\s*[.,]\s*(\d)/);if(m)return {v:+(m[1]+'.'+m[2]),d:false};const d=dig(t);
   if(/^(3[4-9]|4[0-2])$/.test(d))return {v:+d,d:false};if(/^(3[4-9]|4[0-2])\d$/.test(d))return {v:+(d.slice(0,2)+'.'+d[2]),d:!/[.,]/.test(t)};return null},
  fio2(t){const d=dig(t);if(/^100/.test(d))return {v:100,d:false};let v=+d.slice(0,2);if(d.length>=2&&v>=21&&v<=99)return {v,d:!(d.length===2||/%/.test(t)||/^\d\d[.,]?1$/.test(d))&&d.length>2&&!/^21/.test(d)};
@@ -80,8 +80,8 @@ function costo(l,v,dy){const f=LEE[l.k]&&LEE[l.k](v.text,{});let c=dy+(f?0:22)+(
 function medianH(labels,G){const h=G.filter(o=>filaDe(o.text)).map(o=>o.y1-o.y0).sort((a,b)=>a-b);return h[Math.floor(h.length/2)]||30}
 // ---------- balance hídrico escrito a mano ----------
 function hojaBH(items){const R=[];
- items.forEach(o=>{const t=o.text.replace(/\s+/g,'');const m=t.match(/[BbPp8ß][HhN](?=[^a-z]|$)/);if(!m)return;
-  let r=t.slice(m.index+2).replace(/^[:=;.,：]+/,'');let signo=null;
+ items.forEach(o=>{const t=o.text.replace(/\s+/g,'');const t2=t.replace(/([0-9])[Oo]|[Oo](?=[0-9])/g,(x,a)=>a!=null?a+'0':'0');const m=t2.match(/[BbPp8ß][Oo0]?[HhN](?=[^a-z]|$)/);if(!m)return;
+  let r=t2.slice(m.index+m[0].length).replace(/^[:=;.,：]+/,'');let signo=null;
   if(/^[(（]?[-−–—一][)）]?/.test(r)){signo='-';r=r.replace(/^[(（]?[-−–—一][)）]?/,'')}
   else if(/^[(（]?\+[)）]?/.test(r)){signo='+';r=r.replace(/^[(（]?\+[)）]?/,'')}
   else if(/^[(（].?[)）]?(?=\d)/.test(r)){r=r.replace(/^[(（].?[)）]?/,'')}

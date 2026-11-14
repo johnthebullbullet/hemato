@@ -27,7 +27,7 @@ function filaDe(t){const u=nrm(t).trim();for(const [re,k] of FILAS)if(re.test(u)
 const dig=s=>(String(s).match(/\d/g)||[]).join('');
 // ---------- lectura de cada tipo de valor ----------
 const LEE={
- hora(t){const d=dig(t);if(/^0?8/.test(d))return '08';if(/^12/.test(d))return '12';if(/^16/.test(d))return '16';if(/^20/.test(d))return '20';if(/^(24|00)/.test(d))return '24';if(/^0?4/.test(d))return '04';return null},
+ hora(t){const d=dig(t);if(!d)return null;let h=d.length>=2?+d.slice(0,2):+d;if(h>24&&d.length>=1)h=+d[0];if(h>24)return null;return String(h===0?24:h).padStart(2,'0')},
  fc(t){if(/\//.test(t))return null;const d=dig(t);if(!d)return null;let v=+d.slice(0,3);if(d.length>=3&&v>=30&&v<=220)return {v,d:d.length>3&&!/^\d{3}\D/.test(t)};v=+d.slice(0,2);return v>=30&&v<=220?{v,d:d.length>2}:null},
  pa(t,ctx){let c=[];const m=t.match(/(\d{2,3})\s*[\/|1lI]\s*(\d{2,3})/);
   const s=dig(t);if(t.includes('/')){const p=t.split('/');const a=+dig(p[0]),b=+dig(p[1]);if(a&&b)c.push([a,b,0])}
@@ -36,7 +36,7 @@ const LEE={
   const pam=ctx&&ctx.pam;if(pam){c.sort((x,y)=>Math.abs((x[0]+2*x[1])/3-pam)-Math.abs((y[0]+2*y[1])/3-pam)||x[2]-y[2]);const k=c[0];const err=Math.abs((k[0]+2*k[1])/3-pam);return {v:k[0]+'/'+k[1],s:k[0],dd:k[1],d:err>6||k[2]>1}}
   c.sort((x,y)=>x[2]-y[2]);return {v:c[0][0]+'/'+c[0][1],s:c[0][0],dd:c[0][1],d:c[0][2]>0||c.length>1}},
  pam(t){const d=dig(t);if(!d)return null;const v=+d;if(v>=40&&v<=160)return {v,d:false};if(d.length===3){const a=+(d[0]+d[2]);if(a>=40&&a<=160)return {v:a,d:true}}return null},
- fr(t){const d=dig(t);const v=+d.slice(0,2);return d&&v>=6&&v<=60?{v,d:d.length>2}:null},
+ fr(t){const d=dig(t);const v=+d.slice(0,2);return d&&v>=8&&v<=60?{v,d:d.length>2}:null},
  t(t){const m=t.match(/(3\d|4[0-2])\s*[.,]\s*(\d)/);if(m)return {v:+(m[1]+'.'+m[2]),d:false};const d=dig(t);
   if(/^(3[4-9]|4[0-2])$/.test(d))return {v:+d,d:false};if(/^(3[4-9]|4[0-2])\d$/.test(d))return {v:+(d.slice(0,2)+'.'+d[2]),d:!/[.,]/.test(t)};return null},
  fio2(t){const d=dig(t);if(/^100/.test(d))return {v:100,d:false};let v=+d.slice(0,2);if(d.length>=2&&v>=21&&v<=99)return {v,d:!(d.length===2||/%/.test(t)||/^\d\d[.,]?1$/.test(d))&&d.length>2&&!/^21/.test(d)};
@@ -93,8 +93,8 @@ function costo(l,v,dy){const f=LEE[l.k]&&LEE[l.k](v.text,{});let c=dy+(f?0:22)+(
 function medianH(labels,G){const h=G.filter(o=>filaDe(o.text)).map(o=>o.y1-o.y0).sort((a,b)=>a-b);return h[Math.floor(h.length/2)]||30}
 // ---------- balance hídrico escrito a mano ----------
 function hojaBH(items){const R=[];
- items.forEach(o=>{const t=o.text.replace(/\s+/g,'');const m=t.match(/[BbPp8ß][HhN](?=[^a-z]|$)/);if(!m)return;
-  let r=t.slice(m.index+2).replace(/^[:=;.,：]+/,'');let signo=null;
+ items.forEach(o=>{const t=o.text.replace(/\s+/g,'');const t2=t.replace(/([0-9])[Oo]|[Oo](?=[0-9])/g,(x,a)=>a!=null?a+'0':'0');const m=t2.match(/[BbPp8ß][Oo0]?[HhN](?=[^a-z]|$)/);if(!m)return;
+  let r=t2.slice(m.index+m[0].length).replace(/^[:=;.,：]+/,'');let signo=null;
   if(/^[(（]?[-−–—一][)）]?/.test(r)){signo='-';r=r.replace(/^[(（]?[-−–—一][)）]?/,'')}
   else if(/^[(（]?\+[)）]?/.test(r)){signo='+';r=r.replace(/^[(（]?\+[)）]?/,'')}
   else if(/^[(（].?[)）]?(?=\d)/.test(r)){r=r.replace(/^[(（].?[)）]?/,'')}
@@ -476,7 +476,7 @@ root.HematoLote=api;if(typeof module!=='undefined')module.exports=api;
 })(typeof window!=='undefined'?window:globalThis);
 
 </script>
-<title>Hematología Intensiva HGGB · v22</title>
+<title>Hematología Intensiva HGGB · v23</title>
 <script>/**
  * @licstart The following is the entire license notice for the
  * JavaScript code in this page
@@ -594,7 +594,7 @@ body.touch .mono{font-size:14px}
 <body>
 <div class="app">
 <div class="hdr">
-  <div><b>Hematología Intensiva · HGGB</b><br><small>Evolución e ingreso · v22 · funciona sin internet</small></div>
+  <div><b>Hematología Intensiva · HGGB</b><br><small>Evolución e ingreso · v23 · funciona sin internet</small></div>
   <div style="font-size:11px"><select class="modosel" onchange="setModo(this.value)"><option value="full">Planes e indicaciones: completos</option><option value="short">Planes e indicaciones: acortados (FDS / festivo)</option></select> <span id="modo-auto" style="opacity:.7"></span></div>
   <div class="nav">
     <button class="nb prim" id="nav-lote" onclick="go('lote')">⬆ Cargar todo</button>
@@ -3731,24 +3731,6 @@ function fotoElegir(cam){if(location.protocol==='file:'){alert('La lectura de fo
  i.onchange=()=>{if(i.files[0])fotoProcesar(i.files[0])};i.click()}
 async function fotoBitmap(blob){try{return await createImageBitmap(blob,{imageOrientation:'from-image'})}catch(e){
  return await new Promise((res,rej)=>{const im=new Image();im.onload=()=>res(im);im.onerror=rej;im.src=URL.createObjectURL(blob)})}}
-function fotoLienzo(bm,rot){const W=bm.width,H=bm.height,k=Math.min(1,1280/Math.max(W,H)),w=Math.round(W*k),h=Math.round(H*k);
- const c=document.createElement('canvas');const g=c.getContext('2d');
- if(rot===90){c.width=h;c.height=w;g.translate(0,w);g.rotate(-Math.PI/2)}else if(rot===270){c.width=h;c.height=w;g.translate(h,0);g.rotate(Math.PI/2)}else{c.width=w;c.height=h}
- g.drawImage(bm,0,0,w,h);return c}
-async function fotoProcesar(blob){if(!cur.pid)return;const pid=cur.pid;$('foto-panel').style.display='none';
- try{const bm=await fotoBitmap(blob);let I=null,cv=null;
-  const nota=(I,it)=>(I.sv?100:0)+I.bh.filter(x=>x.cuadra).length*20+I.bh.length*5+(it.length?10*it.reduce((a,o)=>a+o.score,0)/it.length:0);
-  let best=null,ms=0;
-  for(const rot of [0,90,270]){const c=fotoLienzo(bm,rot);if(rot)fotoEstado(`Probando la foto girada ${rot}°…`);
-   const t0=Date.now();const r=await ocrLeer(c);ms+=Date.now()-t0;const J=HematoHoja.interpretar(r.items);
-   const de_lado=r.items.length&&r.items.filter(o=>{const xs=o.box.map(p=>p[0]),ys=o.box.map(p=>p[1]);return (Math.max(...ys)-Math.min(...ys))>1.5*(Math.max(...xs)-Math.min(...xs))}).length/r.items.length>0.4;
-   const n=nota(J,r.items)-(de_lado?50:0);if(!best||n>best.n)best={n,I:J,cv:c};
-   if(J.sv&&!de_lado)break;if(J.bh.length&&J.bh.every(x=>!x.dudaSigno)&&!de_lado)break}
-  I=best.I;cv=best.cv;I.ms=ms;
-  if(cur.pid!==pid){fotoEstado('Cambiaste de paciente: la lectura se descartó.');return}
-  if(!I.sv&&!I.bh.length){fotoEstado('No encontré signos vitales ni BH en la foto. Prueba con una foto más derecha y cercana.');return}
-  fotoR={I,cv,col:null};fotoEstado(`Leída en ${Math.round(I.ms/1000)} s. Revisa y aplica.`);fotoRender()}
- catch(e){fotoEstado('No se pudo leer la foto: '+e.message)}}
 function fotoRecorte(box){if(!box||!fotoR)return '';const cv=fotoR.cv;const xs=box.map(p=>p[0]),ys=box.map(p=>p[1]);
  const m=6,x0=Math.max(0,Math.min(...xs)-m),y0=Math.max(0,Math.min(...ys)-m),x1=Math.min(cv.width,Math.max(...xs)+m),y1=Math.min(cv.height,Math.max(...ys)+m);
  const c=document.createElement('canvas');const h=Math.max(1,y1-y0),w=Math.max(1,x1-x0),k=Math.min(2,68/h);c.width=Math.round(w*k);c.height=Math.round(h*k);
@@ -3788,9 +3770,9 @@ async function docTexto(f,estado){const name=f.name||'archivo';const buf=await f
    const c=document.createElement('canvas');c.width=Math.round(vp.width);c.height=Math.round(vp.height);await pg.render({canvasContext:c.getContext('2d'),viewport:vp}).promise;const r=await ocrLeer(c);partes.push(await lineasOCR(r.items))}
   return {texto:partes.join('\n\n'),ocr:true,buf}}
  if(/^image\//.test(f.type)||/\.(png|jpe?g|heic|webp)$/i.test(name)){if(location.protocol==='file:')throw new Error('las imágenes se leen en la app publicada');
-  const bm=await fotoBitmap(f);const c=lienzoMax(bm,bm.width,bm.height,1600);estado&&estado(`${name}: leyendo imagen…`);const r=await ocrLeer(c);
-  const I=HematoHoja.interpretar(r.items);if(I.sv||I.bh.length){return {hoja:{I,cv:fotoLienzo(bm,0)},ocr:true}}
-  return {texto:await lineasOCR(r.items),ocr:true}}
+  const bm=await fotoBitmap(f);estado&&estado(`${name}: leyendo imagen…`);const r=await fotoMejorLectura(bm,t=>estado&&estado(name+': '+t));
+  if(r.I.sv||r.I.bh.length){return {hoja:{I:r.I,cv:r.cv},ocr:true}}
+  return {texto:await lineasOCR(r.items0||[]),ocr:true}}
  if(/\.docx$/i.test(name))return {texto:await docxTexto(buf)};
  return {texto:new TextDecoder('utf-8').decode(buf)}}
 function esLab(t){return /HEMOGRAMA|VALOR(?:ES)?\s+DE\s+REFERENCIA|RESULTADO\s+UNIDAD|LABORATORIO CL[IÍ]NICO|N[°º]\s*DE\s*ORDEN/i.test(t)&&!/EVOLUCI[OÓ]N|DIAGN[OÓ]STICOS|PROBLEMAS Y PLANES/i.test(t)}
@@ -4044,9 +4026,10 @@ function refrescarF5(){try{renderTend();renderNews();renderAyuda()}catch(e){cons
 
 // ═══ FOTO: hoja del día anterior (24 h: diuresis y BH) vs hoja de hoy (signos vitales y peso) ═══
 function fotoClasificar(I){if(!I.sv)return I.bh.length?'bh':'hoy';
- const conDatos=I.sv.filter(c=>Object.values(c.f).filter(f=>f.v!=null).length>=2).length,horas=new Set(I.sv.map(c=>c.hora).filter(Boolean));
- const noche=['20','24','04'].some(h=>horas.has(h)),h24=I.bh.some(x=>x.h24);
- return (conDatos>=5||h24||(noche&&conDatos>=3))?'ayer':'hoy'}
+ const SVK=['fc','pa','pam','t','sat','fio2'];const colsSV=I.sv.filter(c=>SVK.filter(k=>c.f[k]&&c.f[k].v!=null).length>=2);
+ const horas=colsSV.map(c=>+c.hora).filter(h=>!isNaN(h)&&h>0);const noche=horas.some(h=>h>=20||h<=6);
+ const h24=I.bh.some(x=>x.h24)||I.bh.length>=2;
+ return (colsSV.length>=5||h24||noche)?'ayer':'hoy'}
 const FOTO_SV=[['fc','FC'],['pa','PA'],['pam','PAM'],['fr','FR'],['t','T°'],['fio2','FiO₂'],['sat','SatO₂'],['eva','EVA'],['peso','Peso']];
 function fotoModo(m){fotoR.modo=m;fotoRender()}
 function fotoRender(){const b=$('foto-panel'),{I}=fotoR;if(!fotoR.modo)fotoR.modo=fotoClasificar(I);const M=fotoR.modo;let h='<div class="fp">';
@@ -4086,6 +4069,26 @@ function fotoAplicar(){if(!fotoR)return;const {I}=fotoR,M=fotoR.modo;const hecho
    vals.forEach((v,i)=>fotoSet('d'+(i+1),String(v)));hecho.push('diuresis 24 h')}}
  if(M!=='hoy')I.bh.forEach((x,i)=>{const d=$('fbhd_'+i).value,v=$('fbhv_'+i).value.trim(),s=$('fbhs_'+i).value;if(!d||!v)return;fotoSet(d,(s==='-'?'-':'')+v.replace(/\D/g,''));hecho.push(d==='bh24'?'BH 24 h':'BH 12 h')});
  schedSave();fotoDescartar();fotoEstado(hecho.length?'Aplicado: '+[...new Set(hecho)].join(', ')+'.':'No había valores para aplicar.')}
+// lectura con búsqueda de orientación: 0°, 180° (hoja de cabeza), 90° y 270°
+function fotoLienzo(bm,rot){const W=bm.width,H=bm.height,mx=Math.max(W,H)>=2400?2048:1280,k=Math.min(1,mx/Math.max(W,H)),w=Math.round(W*k),h=Math.round(H*k);
+ const c=document.createElement('canvas');const g=c.getContext('2d');
+ if(rot===90){c.width=h;c.height=w;g.translate(0,w);g.rotate(-Math.PI/2)}else if(rot===270){c.width=h;c.height=w;g.translate(h,0);g.rotate(Math.PI/2)}else if(rot===180){c.width=w;c.height=h;g.translate(w,h);g.rotate(Math.PI)}else{c.width=w;c.height=h}
+ g.drawImage(bm,0,0,w,h);return c}
+async function fotoMejorLectura(bm,estado){const nota=(I,it)=>(I.sv?100+Object.keys(I.sv).length:0)+I.bh.filter(x=>x.cuadra).length*20+I.bh.length*5+(it.length?10*it.reduce((a,o)=>a+o.score,0)/it.length:0);
+ let best=null,ms=0,items0=null;
+ for(const rot of [0,180,90,270]){const c=fotoLienzo(bm,rot);if(rot&&estado)estado(`Probando la foto girada ${rot}°…`);
+  const t0=Date.now();const r=await ocrLeer(c);ms+=Date.now()-t0;if(rot===0)items0=r.items;const J=HematoHoja.interpretar(r.items);
+  const de_lado=r.items.length&&r.items.filter(o=>{const xs=o.box.map(p=>p[0]),ys=o.box.map(p=>p[1]);return (Math.max(...ys)-Math.min(...ys))>1.5*(Math.max(...xs)-Math.min(...xs))}).length/r.items.length>0.4;
+  const n=nota(J,r.items)-(de_lado?50:0);if(!best||n>best.n)best={n,I:J,cv:c,rot};
+  if(J.sv&&!de_lado&&(rot===0||rot===180))break;if(J.bh.length&&J.bh.every(x=>!x.dudaSigno)&&!de_lado)break;
+  if(rot===180&&!de_lado&&best.rot===0&&!J.sv&&!J.bh.length&&!best.I.sv&&!best.I.bh.length)continue}
+ best.I.ms=ms;best.items0=items0;return best}
+async function fotoProcesar(blob){if(!cur.pid)return;const pid=cur.pid;$('foto-panel').style.display='none';
+ try{const bm=await fotoBitmap(blob);const r=await fotoMejorLectura(bm,fotoEstado);const I=r.I;
+  if(cur.pid!==pid){fotoEstado('Cambiaste de paciente: la lectura se descartó.');return}
+  if(!I.sv&&!I.bh.length){fotoEstado('No encontré signos vitales ni BH en la foto. Prueba con una foto más derecha y cercana.');return}
+  fotoR={I,cv:r.cv,col:null};fotoEstado(`Leída en ${Math.round(I.ms/1000)} s${r.rot?' (girada '+r.rot+'°)':''}. Revisa y aplica.`);fotoRender()}
+ catch(e){fotoEstado('No se pudo leer la foto: '+e.message)}}
 
 document.addEventListener('click',e=>{const m=$('mas');if(m&&!m.contains(e.target))m.classList.remove('ab')});
 document.addEventListener('click',e=>{if(e.target.closest&&e.target.closest('.mas .menu button'))$('mas').classList.remove('ab')});
