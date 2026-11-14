@@ -1,7 +1,7 @@
 // Hemato HGGB · service worker · cambiar VERSION en cada actualización de la app.
 // Los archivos del lector de fotos (carpeta ocr/) van en su propio caché y se descargan una sola vez;
 // cambiar OCR_CACHE solo si cambian los modelos o el motor.
-const VERSION='hemato-v20';
+const VERSION='hemato-v21';
 const OCR_CACHE='hemato-ocr-1';
 const FILES=['./','./index.html','./manifest.webmanifest','./icon-192.png','./icon-512.png','./ocr/hoja.js','./lote.js'];
 self.addEventListener('install',e=>{e.waitUntil(caches.open(VERSION).then(c=>c.addAll(FILES)));self.skipWaiting()});

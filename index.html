@@ -475,7 +475,7 @@ root.HematoLote=api;if(typeof module!=='undefined')module.exports=api;
 })(typeof window!=='undefined'?window:globalThis);
 
 </script>
-<title>Hematología Intensiva HGGB · v20</title>
+<title>Hematología Intensiva HGGB · v21</title>
 <script>/**
  * @licstart The following is the entire license notice for the
  * JavaScript code in this page
@@ -548,6 +548,7 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--ac2);border-colo
 .mprev{max-height:36vh;overflow:auto;border:1px solid var(--bd);border-radius:4px;background:#fff;margin-top:4px}.mprev .r{display:flex;gap:6px;align-items:flex-start;padding:2px 6px;border-left:4px solid var(--bd);border-bottom:1px solid var(--bg2);font-size:11px}.mprev .r select{font-size:10.5px;padding:0 2px;flex:0 0 112px}.mprev .r .t{flex:1;white-space:pre-wrap;word-break:break-word;font-family:ui-monospace,'SF Mono',Menlo,monospace}.mprev .s-dx{border-left-color:#8a5a00}.mprev .s-narr{border-left-color:#b5b4aa}.mprev .s-ef{border-left-color:#1e6a3a}.mprev .s-ex{border-left-color:#6b4fa0}.mprev .s-pp{border-left-color:#1a3f7a}.mprev .s-ind{border-left-color:#a8326e}.mprev .s-skip{opacity:.45}
 .fp{border:1px solid var(--bd);border-radius:4px;background:#fff;padding:6px;margin-top:4px}.fp table{border-collapse:collapse;width:100%}.fp td{border-bottom:1px solid var(--bg2);padding:3px 5px;vertical-align:middle;font-size:12px}.fp tr.dud td{background:#fff3d0}.fp img{height:44px;max-width:200px;border:1px solid var(--bd);border-radius:2px;display:block}.fp input,.fp select{font-size:13px}.fp .chips button{margin:0 4px 4px 0;padding:3px 10px;border:1px solid var(--bd);border-radius:12px;background:var(--bg);cursor:pointer;font-family:inherit}.fp .chips button.on{background:var(--ac);color:#fff;border-color:var(--ac)}
 .lpaste{border:1px solid var(--bd);border-radius:4px;padding:5px;margin:4px 0;background:#fff}.lpaste textarea{width:100%}.imp-g{font-weight:700;font-size:11.5px;color:var(--ac);margin:6px 0 2px}.imp-it{display:flex;flex-wrap:wrap;gap:4px 6px;align-items:flex-start;border-left:4px solid var(--am);background:#fffaf0;padding:4px 6px;margin:3px 0;border-radius:3px}.imp-it.ok{border-left-color:var(--gr);background:#f2fbf4}.imp-it.desc{border-left-color:var(--bd);background:var(--bg);opacity:.8}.imp-it textarea{flex:1;min-width:260px;font-size:12.5px}.imp-it select{font-size:11px;max-width:150px}.imp-it .t{flex:1;min-width:220px;font-size:12.5px}.imp-it .acc{display:flex;gap:4px;flex-wrap:wrap}.imp-it .note{flex-basis:100%}#sheet .sec.cop{border-left:4px solid #e0a800;background:#fffdf3}.copbadge{font-weight:400;font-size:10.5px;margin-left:8px;background:#fff3c4;color:#6b4e00;padding:1px 6px;border-radius:8px}.copbadge a{color:#6b4e00}
+.nb.prim{background:#f0b429;color:#1a1a18;border-color:#f0b429;font-weight:700}.nb.prim:hover,.nb.prim.on{background:#ffd166;color:#1a1a18}.mas{position:relative}.mas .menu{display:none;position:absolute;right:0;top:115%;background:#fff;border:1px solid var(--bd);border-radius:4px;box-shadow:0 4px 14px rgba(0,0,0,.18);z-index:40;min-width:190px}.mas.ab .menu{display:block}.mas .menu button{display:block;width:100%;text-align:left;padding:9px 12px;border:0;background:none;font:inherit;font-size:12.5px;color:var(--tx);cursor:pointer}.mas .menu button:hover,.mas .menu button.on{background:var(--ac2)}.inicio{display:flex;align-items:center;gap:14px;flex-wrap:wrap;background:#fff8e1;border:1px solid #f0d58a;border-left:5px solid #f0b429;border-radius:6px;padding:10px 14px;margin:8px 0 12px}.btn.big{background:#f0b429;color:#1a1a18;font-weight:700;font-size:14px;padding:9px 18px;border:0}.am{padding:4px 8px;border-left:4px solid var(--am);background:#fffaf0;margin:3px 0;font-size:12.5px;border-radius:3px}.am.urg{border-left-color:var(--rd);background:#fff4f4}table.tend td,table.tend th{text-align:center;padding:2px 6px}table.tend td:first-child{text-align:left}
 .info{margin:6px 0;padding:6px 10px;background:var(--ac2);border:1px solid #b8ccee;border-radius:4px;font-size:11.5px;display:none}.info.vis{display:block}
 .bar{position:sticky;bottom:0;background:#fff;border-top:1px solid var(--bd);padding:8px 14px calc(8px + env(safe-area-inset-bottom));display:flex;gap:6px;flex-wrap:wrap;align-items:center;z-index:10}
 .only-ing,.only-evo{}
@@ -592,14 +593,14 @@ body.touch .mono{font-size:14px}
 <body>
 <div class="app">
 <div class="hdr">
-  <div><b>Hematología Intensiva · HGGB</b><br><small>Evolución e ingreso · v20 · funciona sin internet</small></div>
-  <div style="font-size:11px"><select class="modosel" onchange="setModo(this.value)"><option value="full">Planes e indicaciones completos (desde evolución anterior)</option><option value="short">Planes e indicaciones acortados (FDS / festivo)</option></select> <span id="modo-auto" style="opacity:.7"></span></div>
-  <div class="nav"><button class="nb" id="btouch" onclick="toggleTouch()">Táctil</button>
+  <div><b>Hematología Intensiva · HGGB</b><br><small>Evolución e ingreso · v21 · funciona sin internet</small></div>
+  <div style="font-size:11px"><select class="modosel" onchange="setModo(this.value)"><option value="full">Planes e indicaciones: completos</option><option value="short">Planes e indicaciones: acortados (FDS / festivo)</option></select> <span id="modo-auto" style="opacity:.7"></span></div>
+  <div class="nav">
+    <button class="nb prim" id="nav-lote" onclick="go('lote')">⬆ Cargar todo</button>
     <button class="nb on" id="nav-camas" onclick="go('camas')">Camas</button>
-    <button class="nb" id="nav-lote" onclick="go('lote')">Cargar todo</button>
-    <button class="nb" id="nav-exam" onclick="go('exam')">Exámenes del día</button>
-    <button class="nb" id="nav-buscar" onclick="go('buscar')">Pacientes / historial</button>
-    <button class="nb" id="nav-resp" onclick="go('resp')">Respaldo</button>
+    <button class="nb" id="nav-exam" onclick="go('exam')">Exámenes</button>
+    <button class="nb" id="nav-buscar" onclick="go('buscar')">Pacientes</button>
+    <span class="mas" id="mas"><button class="nb" onclick="event.stopPropagation();$('mas').classList.toggle('ab')">Más ▾</button><span class="menu"><button id="btouch" onclick="toggleTouch()">Modo táctil (tablet)</button><button id="nav-resp" onclick="go('resp')">Respaldo e importar</button><button onclick="go('lote');setTimeout(()=>{const d=document.querySelector('#scr-lote details');if(d){d.open=true;d.scrollIntoView()}},50)">Reglas aprendidas</button></span></span>
   </div>
 </div>
 
@@ -619,6 +620,7 @@ body.touch .mono{font-size:14px}
 
 <!-- ═══ CAMAS ═══ -->
 <div class="scr vis" id="scr-camas">
+  <div class="inicio"><div style="flex:1;min-width:220px"><b>Empezar el día</b><div class="note">Evoluciones del SIRyC, entrega de turno, exámenes y fotos, todo junto. Las hojas quedan prepicadas con las novedades en su lugar.</div><div class="note" id="ini-res"></div></div><button class="btn big" onclick="go('lote')">⬆ Cargar todo</button></div>
   <h2>Camas</h2><div class="note" id="camas-res"></div>
   <div id="salas"></div>
 </div>
@@ -643,6 +645,7 @@ body.touch .mono{font-size:14px}
   <input type="hidden" data-k="cop_json">
   <div class="row" id="copall" style="display:none;margin:2px 0 6px"><span class="note"><b style="color:var(--am)">Secciones marcadas en amarillo: copiadas de ayer.</b> Se confirman solas al tocarlas.</span><button class="btn sec sm" onclick="copConfirmar('*')">Confirmar todo lo copiado</button></div>
   <div class="sec only-evo" style="display:none"><div class="st">NOVEDADES IMPORTADAS Y PENDIENTES</div><div id="imp-panel"></div></div>
+  <div class="sec only-evo" style="display:none"><div class="st">AYUDA MEMORIA (no va en el texto)</div><div id="ayuda"></div></div>
   <div class="sec"><div class="st">FOTO DE LA HOJA DE ENFERMERÍA · signos vitales, diuresis parcial, BH</div>
     <div class="row"><button class="btn sm" onclick="fotoElegir(true)">Tomar foto</button><button class="btn sec sm" onclick="fotoElegir(false)">Elegir imagen</button><span class="note" id="foto-st"></span></div>
     <div class="note">Foto derecha y en vertical, del trozo de la hoja con las columnas de horas (o del BH). En el PC también puedes pegar la imagen (Ctrl+V). Cada valor aparece junto a su recorte de la foto: revísalo antes de aplicar.</div>
@@ -667,6 +670,7 @@ body.touch .mono{font-size:14px}
     <span class="f"><b>FiO₂</b><input type="text" data-k="sv_fio2" style="width:3em">%</span>
     <span class="f"><b>HGT</b><input type="text" data-k="sv_hgt" style="width:3.5em"></span>
     <span class="f"><b>Peso</b><input type="text" data-k="sv_peso" style="width:3.5em">kg</span>
+    <span class="f" id="news2"></span>
   </div>
 
   <!-- solo ingreso: diagnóstico, anamnesis -->
@@ -772,6 +776,7 @@ body.touch .mono{font-size:14px}
     <textarea data-k="ex_txt" rows="3" class="mono"></textarea>
     <div class="sub">Exámenes e imágenes previos que se mantienen (arrastrados; borra lo que ya no quieras escribir)</div>
     <textarea data-k="ex_prev" rows="3" class="mono"></textarea>
+    <div id="tend"></div>
   </div>
 
   <div class="sec"><div class="st am">DIAGNÓSTICOS · PROBLEMAS Y PLANES · INDICACIONES</div>
@@ -3159,7 +3164,8 @@ function abrir(id){$(id).classList.add('vis')}function cerrar(id){$(id).classLis
 // ═══ CAMAS ═══
 function dxCorto(p){const l=(p.dx||'').split('\n').map(x=>x.trim()).filter(x=>x&&!/^diagn/i.test(x));return (l[0]||'').replace(/^[\d.\-\s]+/,'')}
 function diaHosp(p){return p.fingreso?daysBetween(p.fingreso,todayISO())+1:''}
-function renderCamas(){const t=todayISO();let oc=0;
+function renderInicio(){const e=$('ini-res');if(!e)return;const t=todayISO();const L=Object.values(DB.patients).filter(p=>p.activo);const pre=L.filter(p=>p.notes.some(n=>n.fecha===t&&n.tipo==='evo'&&n.origen==='lote'));const gen=L.filter(p=>p.notes.some(n=>n.fecha===t&&n.tipo==='evo'&&n.texto));e.textContent=L.length?`Hoy: ${pre.length} de ${L.length} pacientes prepicados · ${gen.length} con evolución generada.`:''}
+function renderCamas(){renderInicio();const t=todayISO();let oc=0;
  $('salas').innerHTML=SALAS.map(s=>`<div class="sala"><div>${s.l}</div><div class="grid">${s.c.map(c=>{const pid=DB.beds[c];const p=pid&&DB.patients[pid];
   if(!p)return `<div class="card" onclick="nuevoIngreso('${c}')"><div class="cn">Cama ${c}</div><div class="note">Vacía — clic para ingresar</div></div>`;
   oc++;const hoy=p.notes.some(n=>n.fecha===t&&n.texto);
@@ -3238,7 +3244,7 @@ function buildSheet(){let h=$('sheet').innerHTML;
  $('sheet').addEventListener('change',onSheetChange);$('sheet').addEventListener('input',onSheetInput);
  const NUM=['qt_dia','sv_pas','sv_pad','sv_pam','sv_fc','sv_fr','sv_t','sv_sat','sv_fio2','sv_hgt','sv_peso','l_gb','l_ran','l_hb','l_plt','l_fib','tx_gr_u','tx_plt_u','tx_pfc_u','tx_crio_u','d1','d2','d3','d4','d5','d6','bh1','bh2','bh24','r_cn_l','r_mmv_p','r_cnaf_l','r_cnaf_p','r_peep','r_vmni_p','dp_sin_h','ef_muco_g','nov_n1','nov_n2','nov_n3','nov_n4'];
  NUM.forEach(k=>{const e=el(k);if(e){e.setAttribute('inputmode',/^(bh|l_hb|sv_t|sv_peso)/.test(k)?'text':'decimal')}});
- const SN={'CONDICIÓN':'Condición','COMPLICACIONES':'Complic.','TRATAMIENTO':'Tratamiento','HEMATOLÓGICO':'Hemato','INFECCIOSO':'Infeccioso','NEUROLÓGICO':'Neuro','HEMODINAMIA':'Hemodinamia','RESPIRATORIO':'Resp.','RENAL':'Renal / BH','CIERRE':'Cierre','EXAMEN':'Examen físico','EXÁMENES':'Exámenes','DIAGNÓSTICOS':'Dx · planes · ind.','NOVEDADES':'Novedades','CAMBIOS':'Cambios ind.','TEXTO':'Texto final','FOTO':'Foto hoja','NOVEDADES':'Novedades','DIAGNÓSTICO':'Dx ingreso'};
+ const SN={'CONDICIÓN':'Condición','COMPLICACIONES':'Complic.','TRATAMIENTO':'Tratamiento','HEMATOLÓGICO':'Hemato','INFECCIOSO':'Infeccioso','NEUROLÓGICO':'Neuro','HEMODINAMIA':'Hemodinamia','RESPIRATORIO':'Resp.','RENAL':'Renal / BH','CIERRE':'Cierre','EXAMEN':'Examen físico','EXÁMENES':'Exámenes','DIAGNÓSTICOS':'Dx · planes · ind.','NOVEDADES':'Novedades','CAMBIOS':'Cambios ind.','TEXTO':'Texto final','FOTO':'Foto hoja','NOVEDADES':'Novedades','AYUDA':'Ayuda','DIAGNÓSTICO':'Dx ingreso'};
  const secs=[...document.querySelectorAll('#sheet div.sec')];$('secnav').innerHTML=secs.map((x,i)=>{x.id='sec'+i;const t=((x.querySelector('.st')||{}).textContent||'').replace(/^[\d\s·]+/,'').trim();const w=t.split(/\s/)[0];
   return `<button class="${x.classList.contains('only-ing')?'only-ing':x.classList.contains('only-evo')?'only-evo':''}" onclick="document.getElementById('sec${i}').scrollIntoView({behavior:'smooth'})">${esc(SN[w]||cap(w.toLowerCase()))}</button>`}).join('')}
 
@@ -3254,8 +3260,8 @@ function getState(){const s={};els().forEach(e=>{const k=e.dataset.k;if(e.type==
 function setState(s){els().forEach(e=>{const k=e.dataset.k;if(k==='i_dx')return;if(e.type==='checkbox')e.checked=!!s[k];else e.value=s[k]??''});
  fillDx();if(s.i_dx)setV('i_dx',s.i_dx);paintCk();calcTot()}
 let tSave=null;
-function onSheetChange(e){const t=e.target;{const sc=t.closest&&t.closest('div.sec');if(sc&&t.dataset&&t.dataset.k!=='cop_json'){const nm=secNombre(sc),c=copEstado();if(c.on&&SEC_CLIN.includes(nm)&&!(c.ok||[]).includes(nm))copConfirmar(nm)}}if(t.type==='checkbox'&&t.checked&&t.dataset.one)groupOff(t);paintCk();calcTot();schedSave()}
-function onSheetInput(e){if(/^(d\d|bh\d|bh24)$/.test(e.target.dataset.k||''))calcTot();schedSave()}
+function onSheetChange(e){const t=e.target;clearTimeout(window._tF5);window._tF5=setTimeout(refrescarF5,300);{const sc=t.closest&&t.closest('div.sec');if(sc&&t.dataset&&t.dataset.k!=='cop_json'){const nm=secNombre(sc),c=copEstado();if(c.on&&SEC_CLIN.includes(nm)&&!(c.ok||[]).includes(nm))copConfirmar(nm)}}if(t.type==='checkbox'&&t.checked&&t.dataset.one)groupOff(t);paintCk();calcTot();schedSave()}
+function onSheetInput(e){if(/^(d\d|bh\d|bh24)$/.test(e.target.dataset.k||''))calcTot();schedSave();clearTimeout(window._tF5);window._tF5=setTimeout(refrescarF5,500)}
 let tSaveP=false;function schedSave(){clearTimeout(tSave);tSaveP=true;tSave=setTimeout(()=>{tSaveP=false;saveDraft()},700)}
 function noteOf(create){const p=P();let n=p.notes.find(x=>x.fecha===cur.date&&x.tipo===cur.mode);if(!n&&create){n={fecha:cur.date,tipo:cur.mode};p.notes.push(n);p.notes.sort((a,b)=>a.fecha<b.fecha?-1:a.fecha>b.fecha?1:0)}return n}
 function saveDraft(){if(!cur.pid)return;const n=noteOf(true);n.state=getState();n.upd=Date.now();P().upd=Date.now();pruneStates();if(saveDB())$('saved').textContent='Borrador guardado '+new Date().toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'})}
@@ -3294,7 +3300,7 @@ function renderHoja(){const p=P();$('sheet').className=cur.mode==='evo'?'mode-ev
  setState(st);$('out').value=(note&&note.texto)||'';if(note&&note.cambios&&note.cambios.length&&!note.texto)changes=note.cambios;
  if(!V('ex_txt'))fillLabs(false);
  const ci=$('counters');ci.innerHTML=changes.length?'<b>Contadores actualizados (revisar):</b> '+changes.map(esc).join(' · '):'';ci.classList.toggle('vis',changes.length>0);
- $('alerts').classList.remove('vis');$('saved').textContent='';go('hoja');renderImp();paintCopiado();if(!fotoR)fotoEstado('');
+ $('alerts').classList.remove('vis');$('saved').textContent='';go('hoja');renderImp();paintCopiado();refrescarF5();if(!fotoR)fotoEstado('');
  if(fotoPend[cur.pid]&&typeof fotoRender==='function'){fotoR={I:fotoPend[cur.pid].I,cv:fotoPend[cur.pid].cv,col:null};delete fotoPend[cur.pid];fotoRender();fotoEstado('Foto cargada en lote: revisa y aplica.')}}
 
 // ═══ CONTADORES ═══
@@ -3424,7 +3430,7 @@ function fillLabs(force){const p=P(),t=cur.date;const L=(p.labs||[]).filter(l=>l
  if(force||!V('ex_txt'))setV('ex_txt',L.map(l=>l.line).join('\n'));
  const last=L[L.length-1].vals||{};const put=(k,val)=>{if(val!=null&&(force||!V(k)))setV(k,String(val).replace('.',','))};
  put('l_gb',last.GB!=null?Math.round(last.GB):null);put('l_ran',last.RAN!=null?Math.round(last.RAN):null);put('l_hb',last.Hb);put('l_plt',last.PLT!=null?Math.round(last.PLT):null);put('l_fib',last.Fibri);
- const nk=neuFromVals(last);if(nk&&(force||!['h_nprof','h_neu','h_sinneu'].some(C)))setC(nk,true);schedSave()}
+ const nk=neuFromVals(last);if(nk&&(force||!['h_nprof','h_neu','h_sinneu'].some(C)))setC(nk,true);schedSave();refrescarF5()}
 function pickSheetPdf(){const i=document.createElement('input');i.type='file';i.accept='application/pdf';i.multiple=true;i.onchange=async()=>{const p=P();let n=0;
  for(const f of i.files){try{const r=await procesarArchivo(f.name,await f.arrayBuffer());
   if(r.name&&matchScore(r.name,p.nombre)<2&&!confirm(`El PDF "${f.name}" es de "${r.name}", no coincide con ${p.nombre}. ¿Asignarlo igual?`))continue;
@@ -3531,6 +3537,7 @@ function generar(){saveDraft();const p=P(),A=[],L=[],a=G('o','a');const hoy=dm(c
   const ni=impNota();if(ni){const sinRev=ni.imp.filter(x=>x.estado==='incl'&&!['dx','pp','ind','cond','ef'].includes(x.sys)).length;const nAv=ni.imp.filter(x=>x.estado==='aviso').length;if(nAv)A.push(nAv+' diferencia(s) con la entrega de turno sin revisar.');if(sinRev)A.push(sinRev+' novedad(es) importada(s) incluida(s) sin marcar como revisadas.');
    const prop=ni.imp.filter(x=>x.estado==='incl'&&['dx','pp','ind','cond'].includes(x.sys)).length;if(prop)A.push(prop+' propuesta(s) de diagnósticos / planes / indicaciones / condición sin aplicar (no van en el texto).')}
   const falta=[];if(!['sv_pas','sv_fc','sv_t','sv_sat'].some(k=>V(k)))falta.push('signos vitales');if(!V('d1')&&!V('bh1')&&!V('bh24')&&!C('rn_bhnd'))falta.push('diuresis / BH');if(!V('ex_txt'))falta.push('exámenes de hoy');if(falta.length)A.push('Falta de hoy: '+falta.join(', ')+'.')}
+ try{ayudaMemoria().filter(x=>x.g==='urg').forEach(x=>A.push(x.t))}catch(e){}
  checkAlerts(A,{T,gb,ran,hb,plt,dx});
  const blocks=[dx,cur.mode==='ing'?V('anam'):'',L.join('\n'),EF,ex,ppOut,indOut].filter(b=>b&&b.trim());
  const out=blocks.join('\n\n');$('out').value=out;
@@ -3628,7 +3635,7 @@ let pfiles=[],presult=[];
 function matchScore(a,b){const ta=norm(a).split(/[\s,]+/).filter(x=>x.length>2),tb=new Set(norm(b).split(/[\s,]+/).filter(x=>x.length>2));return ta.filter(x=>tb.has(x)).length}
 function matchPatient(name){if(name){const a=HematoLote.asociar({nombre:name},Object.values(DB.patients).filter(p=>p.activo));if(a.pid&&a.seguro)return a.pid}let best='',bs=0;Object.values(DB.patients).filter(p=>p.activo).forEach(p=>{const s=matchScore(name,p.nombre);if(s>bs){bs=s;best=p.id}});return bs>=2?best:''}
 async function procesarArchivo(fname,buffer){const text=await extractPdfText(buffer);const name=extractPatientName(text);const ex=extractExamens(text);const line=buildDataLine(ex);
- const vals={};['GB','RAN','Hb','PLT','Fibri','Blastos'].forEach(k=>{const v=numericValue(ex.examenMap,k);if(v!=null)vals[k]=v});
+ const vals={};['GB','RAN','Hb','PLT','Fibri','Blastos','Crea','K','Na','P','Ca','AU','LDH','PCR','PCT','Mg','BT','Lactato'].forEach(k=>{const v=numericValue(ex.examenMap,k);if(v!=null)vals[k]=v});
  return {name,date:ex.date,line,vals,alerts:validateExamens(ex)}}
 function initDrop(){const d=$('drop');d.onclick=()=>{const i=document.createElement('input');i.type='file';i.accept='application/pdf';i.multiple=true;i.onchange=()=>addPFiles(i.files);i.click()};
  d.ondragover=e=>{e.preventDefault();d.classList.add('act')};d.ondragleave=()=>d.classList.remove('act');d.ondrop=e=>{e.preventDefault();d.classList.remove('act');addPFiles(e.dataTransfer.files)}}
@@ -3993,6 +4000,80 @@ function paintCopiado(){const c=copEstado();document.querySelectorAll('#sheet di
  const bt=$('copall');if(bt)bt.style.display=pend.length?'':'none'}
 function copConfirmar(nm){const c=copEstado();if(!c.on)return;c.ok=c.ok||[];if(nm==='*')c.ok=SEC_CLIN.slice();else if(!c.ok.includes(nm))c.ok.push(nm);setV('cop_json',JSON.stringify(c));paintCopiado();schedSave()}
 function copPorConfirmar(){const c=copEstado();if(!c.on)return [];return [...document.querySelectorAll('#sheet div.sec.cop')].map(secNombre)}
+
+
+// ═══ FASE 5: tendencias, lisis tumoral, NEWS2 y ayuda memoria (solo en pantalla; no van al texto) ═══
+const TEND_K=[['Hb','Hb'],['PLT','PLT'],['GB','GB'],['RAN','RAN'],['Blastos','Blastos %'],['Crea','Crea'],['K','K'],['Na','Na'],['P','P'],['Ca','Ca'],['AU','Ác. úrico'],['LDH','LDH'],['PCR','PCR'],['PCT','PCT'],['Fibri','Fibrinógeno'],['Lactato','Lactato']];
+function labFecha(l){const y=(l.importado||todayISO()).slice(0,4);const m=String(l.dm||'').match(/(\d{1,2})[.\/-](\d{1,2})/);if(!m)return l.importado||'';let f=y+'-'+String(m[2]).padStart(2,'0')+'-'+String(m[1]).padStart(2,'0');if(f>(l.importado||f))f=(+y-1)+f.slice(4);return f}
+function serie(p,k){const M={};(p.labs||[]).forEach(l=>{const v=l.vals&&l.vals[k];if(v==null||isNaN(v))return;M[labFecha(l)]=+v});
+ // valores de hoy escritos a mano en la hoja
+ const hoyV={Hb:numDec(V('l_hb')),PLT:num(V('l_plt')),GB:num(V('l_gb')),RAN:num(V('l_ran')),Fibri:num(V('l_fib'))}[k];if(hoyV!=null&&!isNaN(hoyV)){let v=hoyV;if(k==='PLT'&&v<1000)v*=1000;M[cur.date]=v}
+ if(k==='Ca'){const m=(V('ex_txt')||'').match(/\bCa\s*:?\s*(\d+[.,]?\d*)/);if(m)M[cur.date]=numDec(m[1])}
+ return Object.entries(M).filter(([f])=>f<=cur.date).sort((a,b)=>a[0]<b[0]?-1:1).map(([f,v])=>({f,v}))}
+function fmtV(k,v){if(v==null)return '';if(['PLT','GB','RAN'].includes(k))return v>=1000?fmtN(v):String(v);return String(Math.round(v*100)/100).replace('.',',')}
+function renderTend(){const b=$('tend');if(!b||!cur.pid)return;const p=P();const filas=[];const fechas=new Set();
+ const S={};TEND_K.forEach(([k])=>{const s=serie(p,k).slice(-5);if(s.length){S[k]=s;s.forEach(x=>fechas.add(x.f))}});
+ const F=[...fechas].sort().slice(-5);if(!F.length){b.innerHTML='';return}
+ TEND_K.forEach(([k,n])=>{if(!S[k])return;const c=F.map(f=>{const x=S[k].find(y=>y.f===f);return x?fmtV(k,x.v):''});const s=S[k];let fl='';if(s.length>=2){const a=s[s.length-2].v,z=s[s.length-1].v;fl=z>a*1.05?'↑':z<a*0.95?'↓':'='}
+  filas.push(`<tr><td><b>${n}</b></td>${c.map(x=>`<td>${x}</td>`).join('')}<td>${fl}</td></tr>`)});
+ b.innerHTML=`<div class="sub">Tendencia (últimos ${F.length} días con exámenes)</div><table class="asg tend"><tr><th></th>${F.map(f=>`<th>${dm(f)}</th>`).join('')}<th></th></tr>${filas.join('')}</table>`}
+// alertas de laboratorio: creatinina, hemoglobina, lisis tumoral (Cairo-Bishop de laboratorio), electrolitos
+function alertasLab(){const p=P(),A=[];const ult=k=>{const s=serie(p,k);return s.length?s[s.length-1]:null};const hoyL=k=>{const x=ult(k);return x&&daysBetween(x.f,cur.date)<=1?x:null};
+ const cr=serie(p,'Crea');if(cr.length>=2){const z=cr[cr.length-1];if(daysBetween(z.f,cur.date)<=1){const prev48=cr.filter(x=>daysBetween(x.f,z.f)>0&&daysBetween(x.f,z.f)<=2),min7=Math.min(...cr.filter(x=>daysBetween(x.f,z.f)<=7&&x!==z).map(x=>x.v));
+  if(prev48.some(x=>z.v-x.v>=0.3)||(isFinite(min7)&&z.v>=1.5*min7))A.push({g:'urg',t:`Alza de creatinina ${fmtV('Crea',isFinite(min7)?min7:prev48[0].v)} → ${fmtV('Crea',z.v)} (criterio KDIGO de lesión renal aguda).`})}}
+ const hb=serie(p,'Hb');if(hb.length>=2){const z=hb[hb.length-1],a=hb[hb.length-2];if(daysBetween(z.f,cur.date)<=1&&a.v-z.v>=2)A.push({g:'urg',t:`Caída de Hb ${fmtV('Hb',a.v)} → ${fmtV('Hb',z.v)} en ${daysBetween(a.f,z.f)} día(s): descartar sangrado o hemólisis.`})}
+ const crit=[];const base=(k)=>{const s=serie(p,k).filter(x=>daysBetween(x.f,cur.date)<=7);return s.length>=2?s[0].v:null};
+ const chk=(k,n,umbral,dir)=>{const z=hoyL(k);if(!z)return;const b0=base(k);const absOk=dir>0?z.v>=umbral:z.v<=umbral;const relOk=b0!=null&&b0>0&&(dir>0?z.v>=b0*1.25:z.v<=b0*0.75);if(absOk||relOk)crit.push(`${n} ${fmtV(k,z.v)}${relOk&&!absOk?' (+25 % sobre basal '+fmtV(k,b0)+')':''}`)};
+ chk('AU','ácido úrico',8,1);chk('K','K',6,1);chk('P','P',4.5,1);chk('Ca','Ca',7,-1);
+ if(crit.length>=2)A.push({g:'urg',t:`Criterios de lisis tumoral de laboratorio (Cairo-Bishop, ≥2): ${crit.join(', ')}. ${/lisis|slt/i.test(V('dx'))?'':'No figura en diagnósticos.'}`,k_slt:!/lisis|slt/i.test(V('dx'))});
+ else if(crit.length===1)A.push({g:'obs',t:`Un criterio de lisis tumoral de laboratorio: ${crit[0]}. Repetir ELP, ácido úrico, P, Ca y creatinina.`});
+ const k=hoyL('K');if(k&&(k.v>=6||k.v<=3))A.push({g:'urg',t:`K ${fmtV('K',k.v)}.`});const na=hoyL('Na');if(na&&(na.v<125||na.v>150))A.push({g:'urg',t:`Na ${fmtV('Na',na.v)}.`});
+ const fib=hoyL('Fibri');if(fib&&fib.v<150)A.push({g:'urg',t:`Fibrinógeno ${fmtV('Fibri',fib.v)} mg/dL (<150).`});
+ return A}
+// NEWS2 (Royal College of Physicians 2017), escala 1 de SatO₂
+function news2(){const fr=num(V('sv_fr')),sat=num(V('sv_sat')),pas=num(V('sv_pas')),fc=num(V('sv_fc')),t=numDec(V('sv_t'));
+ const o2=!C('r_amb')&&['r_cn','r_mmv','r_cnaf','r_vmni','r_vmi'].some(C),alt=['n_desor','n_somn','n_delir'].some(C);
+ const falta=[];const P=[];const add=(n,v)=>{if(v==null){falta.push(n);return 0}P.push([n,v]);return v};
+ const sFr=fr==null?null:fr<=8?3:fr<=11?1:fr<=20?0:fr<=24?2:3;const sSat=sat==null?null:sat<=91?3:sat<=93?2:sat<=95?1:0;
+ const sPas=pas==null?null:pas<=90?3:pas<=100?2:pas<=110?1:pas<=219?0:3;const sFc=fc==null?null:fc<=40?3:fc<=50?1:fc<=90?0:fc<=110?1:fc<=130?2:3;
+ const sT=t==null?null:t<=35?3:t<=36?1:t<=38?0:t<=39?1:2;
+ let s=add('FR',sFr)+add('SatO₂',sSat)+add('PAS',sPas)+add('FC',sFc)+add('T°',sT)+(o2?2:0)+(alt?3:0);if(o2)P.push(['O₂',2]);if(alt)P.push(['conciencia',3]);
+ const tres=P.some(([n,v])=>v===3);const banda=s>=7?'alto':s>=5?'medio':tres?'bajo-medio':'bajo';return {s,banda,tres,falta,parcial:falta.length>0}}
+function renderNews(){const e=$('news2');if(!e||!cur.pid)return;const r=news2();if(r.falta.length>=4){e.innerHTML='';return}
+ const col=r.banda==='alto'?'var(--rd)':r.banda==='medio'?'#b35c00':r.banda==='bajo-medio'?'var(--am)':'var(--gr)';
+ e.innerHTML=`<b style="color:${col}">NEWS2 ${r.s}</b> <span class="note">riesgo ${r.banda}${r.parcial?' · parcial, falta '+r.falta.join(', '):''}</span>`}
+// ayuda memoria por diagnóstico, indicaciones y estado del día
+function ayudaMemoria(){const p=P(),dx=norm(V('dx')),ind=norm(V('ind')+'\n'+V('ind_add')),pp=norm(V('pp')),out=[];const R=(g,t)=>out.push({g,t});
+ const ran=num(V('l_ran')),gb=num(V('l_gb'));let plt=num(V('l_plt'));if(plt!=null&&plt<1000)plt*=1000;const T=numDec(V('sv_t'));
+ const neu=C('h_nprof')||C('h_neu')||(ran!=null&&ran<=500);const feb=C('i_feb')||(T!=null&&T>=38);
+ if(neu&&feb)R('urg','Neutropenia febril: HC x2 (periférico y por catéter) antes del ATB, ATB antipseudomónico en ≤60 min, buscar foco y criterios de sepsis.');
+ {const prev=p.notes.filter(n=>n.tipo==='evo'&&n.state&&n.fecha<cur.date&&daysBetween(n.fecha,cur.date)<=5);const dF=prev.filter(n=>n.state.i_feb||n.state.i_febaf).length+(feb?1:0);
+  if(neu&&dF>=4&&(C('i_comp')||/meropenem|cefepime|piperacil|tazob|imipenem/.test(ind)))R('obs','Fiebre ≥4 días con ATB de amplio espectro en neutropenia: considerar estudio fúngico (TC de tórax, galactomanano).')}
+ const antimoho=/posaconazol|voriconazol|isavuconazol|anfotericin|caspofung|micafung|anidulafung/.test(ind);
+ if(/\b(lma|smd|mds|leucemia mieloide)\b/.test(dx)&&/induccion|7\s*\+\s*3|flag|ida.?flag|cpx|vyxeos/.test(dx+' '+norm(V('qt_esq')))&&!antimoho)R('obs','LMA/SMD en inducción sin azol activo contra hongos filamentosos en indicaciones: revisar profilaxis (posaconazol).');
+ if(/venetoclax|\bven\b/.test(dx+' '+ind+' '+norm(V('qt_esq')))&&/posaconazol|voriconazol|fluconazol|isavuconazol|itraconazol/.test(ind))R('urg','Venetoclax con azol: ajustar dosis por inhibición de CYP3A (con posaconazol 70 mg/día; otro inhibidor potente 100 mg/día; inhibidor moderado 200 mg/día).');
+ if(/\b(lpa|apl)\b|promielocitic/.test(dx)){R('obs','LPA: coagulación y fibrinógeno c/12–24 h; mantener fibrinógeno >150 mg/dL y PLT >30.000–50.000; vigilar síndrome de diferenciación (disnea, infiltrados, aumento de peso, hipotensión, falla renal).');
+  if(/ars[eé]nico|\bato\b|trioxido/.test(ind+' '+dx))R('obs','Trióxido de arsénico: ECG con QTc y mantener K y Mg en rango alto normal.')}
+ if(gb!=null&&gb>100000)R('urg',`Hiperleucocitosis (GB ${fmtN(gb)}): citorreducción, evitar transfusión de GR no indispensable, vigilar leucostasis y lisis tumoral.`);
+ const qd=num(V('qt_dia'));if(/\blla\b|burkitt|linfoma b (difuso|de alto grado)|alto grado|\blma\b|leucemia linfoblastica/.test(dx)&&((qd!=null&&qd<=7)||C('qt_ini')))R('obs','Primeros días de QT en neoplasia con riesgo de lisis tumoral: hidratación, alopurinol o rasburicasa según riesgo; ELP, ácido úrico, P, Ca y creatinina c/8–12 h.');
+ if(/\blla\b|burkitt|leucemia linfoblastica/.test(dx))R('obs','LLA / Burkitt: profilaxis SNC con QT IT según protocolo.');
+ if((C('p_pl')||/\bpl\b|qt it|intratecal/.test(pp))&&plt!=null&&plt<50000)R('urg',`PL / QT IT pendiente con PLT ${fmtN(plt)}: habitualmente se requiere ≥50.000.`);
+ if(/mieloma|\bmm\b/.test(dx)){R('obs','MM: control de Ca y función renal.');if(/lenalidom|talidom|pomalidom|\b(krd|vrd|drd|dvrd|dkrd|rd|pd|vtd|isa-?pd)\b/.test(dx+' '+ind)&&!/enoxaparina|heparina|rivaroxaban|apixaban|aspirina|\baas\b/.test(ind))R('obs','IMiD sin tromboprofilaxis en indicaciones.');if(/bortezomib|carfilzomib|daratumumab|isatuximab|\b(krd|kd|vrd|vcd|vd|drd|dvrd|dkrd|dvd|vtd|cybord|isa-?kd|isa-?pd)\b/.test(dx+' '+ind)&&!/aciclovir|valaciclovir/.test(ind))R('obs','Inhibidor de proteasoma o anti-CD38 sin aciclovir en indicaciones.')}
+ if(/dexametasona|prednisona|metilprednisolona|hidrocortisona/.test(ind)&&!V('sv_hgt'))R('obs','Con corticoides: registrar HGT.');
+ // antibióticos u otros tratamientos que terminan hoy (a/b con a = b)
+ const fin=new Set();(V('dx')+'\n'+V('pp')).replace(/([A-Za-zÁÉÍÓÚáéíóúñ\-]{4,}[^()\n]{0,25})\((\d{1,2})\s*\/\s*(\d{1,2})\)/g,(m,f,a,b)=>{if(+a===+b&&+b>1)fin.add(f.trim().split(/\s+/).slice(-1)[0]+' ('+a+'/'+b+')')});
+ fin.forEach(x=>R('obs',`Hoy completa ${x}: suspender o reevaluar.`));
+ if(num(V('ef_muco_g'))>=3)R('obs','Mucositis G3–4: analgesia sistémica, evaluar vía oral y soporte nutricional; mayor riesgo de bacteriemia por estreptococos del grupo viridans.');
+ alertasLab().forEach(x=>out.push(x));
+ const nw=news2();if(!nw.parcial||nw.falta.length<=1){if(nw.banda==='alto')R('urg',`NEWS2 ${nw.s} (riesgo alto): evaluación médica inmediata y considerar UCI.`);else if(nw.banda==='medio')R('urg',`NEWS2 ${nw.s} (riesgo medio): evaluación médica urgente y control de signos vitales más frecuente.`);else if(nw.tres)R('obs',`NEWS2 ${nw.s} con un parámetro en 3: evaluación médica.`)}
+ return out}
+function renderAyuda(){const b=$('ayuda');if(!b||!cur.pid||cur.mode!=='evo'){if(b)b.closest('.sec').style.display='none';return}const L=ayudaMemoria();
+ if(!L.length){b.innerHTML='';b.closest('.sec').style.display='none';return}b.closest('.sec').style.display='';
+ b.innerHTML=L.sort((a,c)=>(a.g==='urg'?0:1)-(c.g==='urg'?0:1)).map(x=>`<div class="am ${x.g}">${esc(x.t)}${x.k_slt?' <button class="btn sm" onclick="agregarDx(\'k_slt\');renderAyuda()">Agregar a diagnósticos</button>':''}</div>`).join('')}
+function refrescarF5(){try{renderTend();renderNews();renderAyuda()}catch(e){console.warn(e)}}
+
+document.addEventListener('click',e=>{const m=$('mas');if(m&&!m.contains(e.target))m.classList.remove('ab')});
+document.addEventListener('click',e=>{if(e.target.closest&&e.target.closest('.mas .menu button'))$('mas').classList.remove('ab')});
 
 if(location.protocol.startsWith('http')&&'serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
 if(navigator.storage&&navigator.storage.persist)navigator.storage.persist().catch(()=>{});
