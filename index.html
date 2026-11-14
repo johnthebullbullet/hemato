@@ -11,7 +11,8 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon-192.png">
 <script src="ocr/hoja.js"></script>
-<title>Hematología Intensiva HGGB · v17</title>
+<script src="lote.js"></script>
+<title>Hematología Intensiva HGGB · v18</title>
 <script>/**
  * @licstart The following is the entire license notice for the
  * JavaScript code in this page
@@ -83,6 +84,7 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--ac2);border-colo
 .alerts.vis{display:block}.alerts div{margin:2px 0}
 .mprev{max-height:36vh;overflow:auto;border:1px solid var(--bd);border-radius:4px;background:#fff;margin-top:4px}.mprev .r{display:flex;gap:6px;align-items:flex-start;padding:2px 6px;border-left:4px solid var(--bd);border-bottom:1px solid var(--bg2);font-size:11px}.mprev .r select{font-size:10.5px;padding:0 2px;flex:0 0 112px}.mprev .r .t{flex:1;white-space:pre-wrap;word-break:break-word;font-family:ui-monospace,'SF Mono',Menlo,monospace}.mprev .s-dx{border-left-color:#8a5a00}.mprev .s-narr{border-left-color:#b5b4aa}.mprev .s-ef{border-left-color:#1e6a3a}.mprev .s-ex{border-left-color:#6b4fa0}.mprev .s-pp{border-left-color:#1a3f7a}.mprev .s-ind{border-left-color:#a8326e}.mprev .s-skip{opacity:.45}
 .fp{border:1px solid var(--bd);border-radius:4px;background:#fff;padding:6px;margin-top:4px}.fp table{border-collapse:collapse;width:100%}.fp td{border-bottom:1px solid var(--bg2);padding:3px 5px;vertical-align:middle;font-size:12px}.fp tr.dud td{background:#fff3d0}.fp img{height:44px;max-width:200px;border:1px solid var(--bd);border-radius:2px;display:block}.fp input,.fp select{font-size:13px}.fp .chips button{margin:0 4px 4px 0;padding:3px 10px;border:1px solid var(--bd);border-radius:12px;background:var(--bg);cursor:pointer;font-family:inherit}.fp .chips button.on{background:var(--ac);color:#fff;border-color:var(--ac)}
+.lpaste{border:1px solid var(--bd);border-radius:4px;padding:5px;margin:4px 0;background:#fff}.lpaste textarea{width:100%}.imp-g{font-weight:700;font-size:11.5px;color:var(--ac);margin:6px 0 2px}.imp-it{display:flex;flex-wrap:wrap;gap:4px 6px;align-items:flex-start;border-left:4px solid var(--am);background:#fffaf0;padding:4px 6px;margin:3px 0;border-radius:3px}.imp-it.ok{border-left-color:var(--gr);background:#f2fbf4}.imp-it.desc{border-left-color:var(--bd);background:var(--bg);opacity:.8}.imp-it textarea{flex:1;min-width:260px;font-size:12.5px}.imp-it select{font-size:11px;max-width:150px}.imp-it .t{flex:1;min-width:220px;font-size:12.5px}.imp-it .acc{display:flex;gap:4px;flex-wrap:wrap}.imp-it .note{flex-basis:100%}#sheet .sec.cop{border-left:4px solid #e0a800;background:#fffdf3}.copbadge{font-weight:400;font-size:10.5px;margin-left:8px;background:#fff3c4;color:#6b4e00;padding:1px 6px;border-radius:8px}.copbadge a{color:#6b4e00}
 .info{margin:6px 0;padding:6px 10px;background:var(--ac2);border:1px solid #b8ccee;border-radius:4px;font-size:11.5px;display:none}.info.vis{display:block}
 .bar{position:sticky;bottom:0;background:#fff;border-top:1px solid var(--bd);padding:8px 14px calc(8px + env(safe-area-inset-bottom));display:flex;gap:6px;flex-wrap:wrap;align-items:center;z-index:10}
 .only-ing,.only-evo{}
@@ -127,14 +129,29 @@ body.touch .mono{font-size:14px}
 <body>
 <div class="app">
 <div class="hdr">
-  <div><b>Hematología Intensiva · HGGB</b><br><small>Evolución e ingreso · v17 · funciona sin internet</small></div>
+  <div><b>Hematología Intensiva · HGGB</b><br><small>Evolución e ingreso · v18 · funciona sin internet</small></div>
   <div style="font-size:11px"><select class="modosel" onchange="setModo(this.value)"><option value="full">Planes e indicaciones completos (desde evolución anterior)</option><option value="short">Planes e indicaciones acortados (FDS / festivo)</option></select> <span id="modo-auto" style="opacity:.7"></span></div>
   <div class="nav"><button class="nb" id="btouch" onclick="toggleTouch()">Táctil</button>
     <button class="nb on" id="nav-camas" onclick="go('camas')">Camas</button>
+    <button class="nb" id="nav-lote" onclick="go('lote')">Cargar todo</button>
     <button class="nb" id="nav-exam" onclick="go('exam')">Exámenes del día</button>
     <button class="nb" id="nav-buscar" onclick="go('buscar')">Pacientes / historial</button>
     <button class="nb" id="nav-resp" onclick="go('resp')">Respaldo</button>
   </div>
+</div>
+
+<!-- ═══ CARGAR TODO ═══ -->
+<div class="scr" id="scr-lote">
+  <h2>Cargar todo</h2>
+  <div class="note">Evoluciones del SIRyC (PDF con texto o escaneado), PDF de exámenes, pantallazos, fotos de la hoja de enfermería, .docx o .txt, todo junto. Cada archivo se reconoce por su contenido y se asocia al paciente por RUT, nombre (solo huellas cifradas) o cama + iniciales. Un archivo con problemas no detiene a los demás.</div>
+  <div class="drop" id="ldrop">Arrastra aquí o toca para elegir archivos (varios a la vez)</div>
+  <div class="flist" id="lfiles"></div>
+  <div class="sub">Texto pegado (controles CMR, comentarios de la entrega, notas sin encabezado)</div>
+  <div id="lpastes"></div>
+  <div class="row"><button class="btn sec sm" onclick="lAddPaste()">+ Agregar otro texto</button><b style="font-size:11.5px;margin-left:10px">Fecha de los textos sin fecha</b><input type="date" id="l-fpeg"></div>
+  <div class="row" style="margin-top:8px"><button class="btn" id="lgo" onclick="lProcesar()">Procesar</button><button class="btn sec" onclick="lLimpiar()">Limpiar</button><span class="note" id="lst"></span></div>
+  <div id="lres"></div>
+  <details style="margin-top:10px"><summary class="note" style="cursor:pointer">Tus reglas aprendidas</summary><div id="reglas"></div></details>
 </div>
 
 <!-- ═══ CAMAS ═══ -->
@@ -160,6 +177,9 @@ body.touch .mono{font-size:14px}
     </div>
   </div>
   <div class="info" id="counters"></div>
+  <input type="hidden" data-k="cop_json">
+  <div class="row" id="copall" style="display:none;margin:2px 0 6px"><span class="note"><b style="color:var(--am)">Secciones marcadas en amarillo: copiadas de ayer.</b> Se confirman solas al tocarlas.</span><button class="btn sec sm" onclick="copConfirmar('*')">Confirmar todo lo copiado</button></div>
+  <div class="sec only-evo" style="display:none"><div class="st">NOVEDADES IMPORTADAS Y PENDIENTES</div><div id="imp-panel"></div></div>
   <div class="sec"><div class="st">FOTO DE LA HOJA DE ENFERMERÍA · signos vitales, diuresis parcial, BH</div>
     <div class="row"><button class="btn sm" onclick="fotoElegir(true)">Tomar foto</button><button class="btn sec sm" onclick="fotoElegir(false)">Elegir imagen</button><span class="note" id="foto-st"></span></div>
     <div class="note">Foto derecha y en vertical, del trozo de la hoja con las columnas de horas (o del BH). En el PC también puedes pegar la imagen (Ctrl+V). Cada valor aparece junto a su recorte de la foto: revísalo antes de aplicar.</div>
@@ -358,11 +378,15 @@ body.touch .mono{font-size:14px}
 </div>
 
 <!-- MODALES -->
+<div class="ov" id="m-inf"><div class="md"><div class="mh">Informe de lectura (enmascarado)<span style="cursor:pointer" onclick="cerrar('m-inf')">×</span></div>
+  <div class="mb"><div class="note">No contiene nombres, RUT ni datos clínicos: las letras se cambian por x y los números por 9. Solo quedan las palabras de estructura y la sección en que quedó cada línea. Puedes enviármelo para ajustar la lectura.</div>
+  <textarea id="mi-txt" rows="18" class="mono" readonly></textarea></div>
+  <div class="mf"><button class="btn" onclick="copyTxt($('mi-txt').value);this.textContent='Copiado ✓'">Copiar</button><button class="btn sec" onclick="cerrar('m-inf')">Cerrar</button></div></div></div>
 <div class="ov" id="m-nuevo"><div class="md"><div class="mh">Paciente en cama <span id="mn-cama"></span><span style="cursor:pointer" onclick="cerrar('m-nuevo')">×</span></div>
   <div class="mb">
     <label class="fl">Buscar paciente existente (reingreso)<input type="text" id="mn-q" oninput="mnBuscar()"></label><div id="mn-res"></div>
     <div class="note" id="mn-sel"></div>
-    <div class="cols"><label class="fl">Nombre<input type="text" id="mn-nom"></label><label class="fl">RUT<input type="text" id="mn-rut"></label></div>
+    <div class="cols"><label class="fl">Nombre<input type="text" id="mn-nom"></label><label class="fl">RUT (se guarda cifrado, no legible)<input type="text" id="mn-rut"></label></div>
     <div class="cols"><label class="fl">Sexo<select id="mn-sx"><option value="f">Femenino</option><option value="m">Masculino</option></select></label><label class="fl">Fecha de ingreso al hospital<input type="date" id="mn-fi"></label></div>
     <div class="sub">¿Qué vas a hacer?</div>
     <label class="o"><input type="radio" name="mn-tipo" value="ing" checked><span>Ingreso nuevo (hoy)</span></label>
@@ -379,7 +403,7 @@ body.touch .mono{font-size:14px}
 
 <div class="ov" id="m-pegar"><div class="md" style="max-width:820px"><div class="mh">Evolución anterior: pegar texto o subir archivo<span style="cursor:pointer" onclick="cerrar('m-pegar')">×</span></div>
   <div class="mb">
-  <div class="row"><button class="btn sm" onclick="$('mp-file').click()">Subir archivo (.pdf / .docx / .txt)</button><input type="file" id="mp-file" accept=".pdf,.docx,.txt,application/pdf" style="display:none" onchange="leerArchivoEvo(this.files[0])"><span class="note" id="mp-st"></span></div>
+  <div class="row"><button class="btn sm" onclick="$('mp-file').click()">Subir archivo (.pdf / .docx / .txt / imagen)</button><input type="file" id="mp-file" accept=".pdf,.docx,.txt,application/pdf,image/*" style="display:none" onchange="leerArchivoEvo(this.files[0])"><span class="note" id="mp-st"></span></div>
   <div class="note">Si el PDF trae varias evoluciones, deja en el cuadro solo la más reciente antes de separar.</div>
   <div class="note">Pega la evolución completa. Abajo ves en qué sección quedó cada línea.</div>
   <textarea id="mp-txt" rows="8" class="mono" oninput="mpTxt()"></textarea>
@@ -2658,14 +2682,15 @@ function cap(s){return s?s.charAt(0).toUpperCase()+s.slice(1):s}
 function dot(s){s=s.trim();return !s?'':(/[.?!]$/.test(s)?s:s+'.')}
 
 function loadDB(){try{DB=JSON.parse(localStorage.getItem(KEY))}catch(e){DB=null}
- if(!DB||!DB.patients)DB={v:10,beds:{},patients:{}};BEDS.forEach(b=>{if(!(b in DB.beds))DB.beds[b]=null})}
+ if(!DB||!DB.patients)DB={v:10,beds:{},patients:{}};BEDS.forEach(b=>{if(!(b in DB.beds))DB.beds[b]=null});migrarHuellas()}
+function migrarHuellas(){DB.reglas=DB.reglas||[];let ch=false;Object.values(DB.patients).forEach(p=>{if(p.rut){p.hue=p.hue||{r:[],t:[]};const h=HematoLote.huellaRut(p.rut);if(h&&!p.hue.r.includes(h))p.hue.r.push(h);delete p.rut;ch=true}});if(ch)try{localStorage.setItem(KEY,JSON.stringify(DB))}catch(e){}}
 function saveDB(){try{localStorage.setItem(KEY,JSON.stringify(DB));return true}catch(e){alert('No se pudo guardar: almacenamiento del navegador lleno. Exporta un respaldo.');return false}}
 function P(){return DB.patients[cur.pid]}
 
 // ═══ NAVEGACIÓN ═══
 function go(s){document.querySelectorAll('.scr').forEach(x=>x.classList.remove('vis'));$('scr-'+s).classList.add('vis');
  document.querySelectorAll('.nb').forEach(b=>b.classList.remove('on'));const n=$('nav-'+s);if(n)n.classList.add('on');
- if(s==='camas')renderCamas();if(s==='buscar')renderBuscar();if(s==='resp')renderUso();if(s==='exam')renderAsg();window.scrollTo(0,0)}
+ if(s==='camas')renderCamas();if(s==='buscar')renderBuscar();if(s==='resp')renderUso();if(s==='exam')renderAsg();if(s==='lote'){lInit();renderReglas()}window.scrollTo(0,0)}
 function abrir(id){$(id).classList.add('vis')}function cerrar(id){$(id).classList.remove('vis')}
 
 // ═══ CAMAS ═══
@@ -2688,7 +2713,8 @@ function mnPick(id){mnSel=id;const p=DB.patients[id];$('mn-nom').value=p.nombre;
 function confirmarNuevo(){const nom=$('mn-nom').value.trim();if(!nom){alert('Ingresa el nombre');return}
  let p;if(mnSel){p=DB.patients[mnSel];p.episodios=p.episodios||[];p.episodios.push({fingreso:p.fingreso,falta:p.falta});p.dx='';p.pp='';p.ind=''}
  else{p={id:uid(),notes:[],labs:[]};DB.patients[p.id]=p}
- Object.assign(p,{upd:Date.now(),nombre:nom,rut:$('mn-rut').value.trim(),sexo:$('mn-sx').value,fingreso:$('mn-fi').value||todayISO(),falta:null,activo:true,cama:cur.bedNew});
+ {const hr=HematoLote.huellaRut($('mn-rut').value);if(hr){p.hue=p.hue||{r:[],t:[]};if(!p.hue.r.includes(hr))p.hue.r.push(hr)}}delete p.rut;
+ Object.assign(p,{upd:Date.now(),nombre:nom,sexo:$('mn-sx').value,fingreso:$('mn-fi').value||todayISO(),falta:null,activo:true,cama:cur.bedNew});
  DB.beds[cur.bedNew]=p.id;saveDB();cerrar('m-nuevo');
  const tipo=(document.querySelector('input[name=mn-tipo]:checked')||{}).value||'ing';
  if(tipo==='evo'){abrirHoja(p.id,'evo');openPegar()}else abrirHoja(p.id,'ing')}
@@ -2749,7 +2775,7 @@ function buildSheet(){let h=$('sheet').innerHTML;
  $('sheet').addEventListener('change',onSheetChange);$('sheet').addEventListener('input',onSheetInput);
  const NUM=['qt_dia','sv_pas','sv_pad','sv_pam','sv_fc','sv_fr','sv_t','sv_sat','sv_fio2','sv_hgt','sv_peso','l_gb','l_ran','l_hb','l_plt','l_fib','tx_gr_u','tx_plt_u','tx_pfc_u','tx_crio_u','d1','d2','d3','d4','d5','d6','bh1','bh2','bh24','r_cn_l','r_mmv_p','r_cnaf_l','r_cnaf_p','r_peep','r_vmni_p','dp_sin_h','ef_muco_g','nov_n1','nov_n2','nov_n3','nov_n4'];
  NUM.forEach(k=>{const e=el(k);if(e){e.setAttribute('inputmode',/^(bh|l_hb|sv_t|sv_peso)/.test(k)?'text':'decimal')}});
- const SN={'CONDICIÓN':'Condición','COMPLICACIONES':'Complic.','TRATAMIENTO':'Tratamiento','HEMATOLÓGICO':'Hemato','INFECCIOSO':'Infeccioso','NEUROLÓGICO':'Neuro','HEMODINAMIA':'Hemodinamia','RESPIRATORIO':'Resp.','RENAL':'Renal / BH','CIERRE':'Cierre','EXAMEN':'Examen físico','EXÁMENES':'Exámenes','DIAGNÓSTICOS':'Dx · planes · ind.','NOVEDADES':'Novedades','CAMBIOS':'Cambios ind.','TEXTO':'Texto final','FOTO':'Foto hoja','DIAGNÓSTICO':'Dx ingreso'};
+ const SN={'CONDICIÓN':'Condición','COMPLICACIONES':'Complic.','TRATAMIENTO':'Tratamiento','HEMATOLÓGICO':'Hemato','INFECCIOSO':'Infeccioso','NEUROLÓGICO':'Neuro','HEMODINAMIA':'Hemodinamia','RESPIRATORIO':'Resp.','RENAL':'Renal / BH','CIERRE':'Cierre','EXAMEN':'Examen físico','EXÁMENES':'Exámenes','DIAGNÓSTICOS':'Dx · planes · ind.','NOVEDADES':'Novedades','CAMBIOS':'Cambios ind.','TEXTO':'Texto final','FOTO':'Foto hoja','NOVEDADES':'Novedades','DIAGNÓSTICO':'Dx ingreso'};
  const secs=[...document.querySelectorAll('#sheet div.sec')];$('secnav').innerHTML=secs.map((x,i)=>{x.id='sec'+i;const t=((x.querySelector('.st')||{}).textContent||'').replace(/^[\d\s·]+/,'').trim();const w=t.split(/\s/)[0];
   return `<button class="${x.classList.contains('only-ing')?'only-ing':x.classList.contains('only-evo')?'only-evo':''}" onclick="document.getElementById('sec${i}').scrollIntoView({behavior:'smooth'})">${esc(SN[w]||cap(w.toLowerCase()))}</button>`}).join('')}
 
@@ -2765,7 +2791,7 @@ function getState(){const s={};els().forEach(e=>{const k=e.dataset.k;if(e.type==
 function setState(s){els().forEach(e=>{const k=e.dataset.k;if(k==='i_dx')return;if(e.type==='checkbox')e.checked=!!s[k];else e.value=s[k]??''});
  fillDx();if(s.i_dx)setV('i_dx',s.i_dx);paintCk();calcTot()}
 let tSave=null;
-function onSheetChange(e){const t=e.target;if(t.type==='checkbox'&&t.checked&&t.dataset.one)groupOff(t);paintCk();calcTot();schedSave()}
+function onSheetChange(e){const t=e.target;{const sc=t.closest&&t.closest('div.sec');if(sc&&t.dataset&&t.dataset.k!=='cop_json'){const nm=secNombre(sc),c=copEstado();if(c.on&&SEC_CLIN.includes(nm)&&!(c.ok||[]).includes(nm))copConfirmar(nm)}}if(t.type==='checkbox'&&t.checked&&t.dataset.one)groupOff(t);paintCk();calcTot();schedSave()}
 function onSheetInput(e){if(/^(d\d|bh\d|bh24)$/.test(e.target.dataset.k||''))calcTot();schedSave()}
 let tSaveP=false;function schedSave(){clearTimeout(tSave);tSaveP=true;tSave=setTimeout(()=>{tSaveP=false;saveDraft()},700)}
 function noteOf(create){const p=P();let n=p.notes.find(x=>x.fecha===cur.date&&x.tipo===cur.mode);if(!n&&create){n={fecha:cur.date,tipo:cur.mode};p.notes.push(n);p.notes.sort((a,b)=>a.fecha<b.fecha?-1:a.fecha>b.fecha?1:0)}return n}
@@ -2777,20 +2803,21 @@ function calcTot(){let d=0,any=false;for(let i=1;i<=6;i++){const n=num(V('d'+i))
 function bhTotal(){if(V('bh24'))return num(V('bh24'));const a=num(V('bh1')),b=num(V('bh2'));if(a==null&&b==null)return null;return (a||0)+(b||0)}
 
 // ═══ ABRIR HOJA ═══
-const DAILY=['qt_ini','qt_fin','t_det','res_dia','i_hc','i_ini','i_esc','i_susp','d1','d2','d3','d4','d5','d6','bh1','bh2','bh24','rn_iones','ci_inter','ex_txt','ind_add','ind_susp'];
+const DAILY=['cop_json','i_afeb','i_feb','i_febaf','h_nprof','h_neu','h_sinneu','qt_ini','qt_fin','t_det','res_dia','i_hc','i_ini','i_esc','i_susp','d1','d2','d3','d4','d5','d6','bh1','bh2','bh24','rn_iones','ci_inter','ex_txt','ind_add','ind_susp'];
 const DAILY_PFX=['sv_','l_','tx_','nov_','pp_'];
 function isDaily(k){return DAILY.includes(k)||DAILY_PFX.some(p=>k.startsWith(p))}
 function abrirHoja(pid,forceMode){cur.pid=pid;const p=P();cur.date=todayISO();
  cur.mode=forceMode||(p.notes.some(n=>n.tipo==='evo')||p.dx?'evo':'ing');renderHoja()}
 function cambiarFecha(v){if(!v||v===cur.date)return;if(tSaveP||noteOf(false))saveDraft();clearTimeout(tSave);tSaveP=false;cur.date=v;renderHoja()}
 function switchMode(){saveDraft();cur.mode=cur.mode==='evo'?'ing':'evo';renderHoja()}
-function headerHoja(){const p=P();$('h-nom').textContent=p.nombre;$('h-meta').textContent=`Cama ${p.cama||'—'} · RUT ${p.rut||'—'} · Ingreso ${p.fingreso?dmy(p.fingreso):'—'} · Día hosp. ${diaHosp(p)}`;$('h-fecha').value=cur.date;$('h-fwarn').textContent=cur.date!==todayISO()?(cur.date<todayISO()?'Nota de una fecha anterior a hoy':'Nota con fecha futura'):'';
+function headerHoja(){const p=P();$('h-nom').textContent=p.nombre;$('h-meta').textContent=`Cama ${p.cama||'—'} · RUT ${p.hue&&p.hue.r&&p.hue.r.length?'registrado (cifrado)':'—'} · Ingreso ${p.fingreso?dmy(p.fingreso):'—'} · Día hosp. ${diaHosp(p)}`;$('h-fecha').value=cur.date;$('h-fwarn').textContent=cur.date!==todayISO()?(cur.date<todayISO()?'Nota de una fecha anterior a hoy':'Nota con fecha futura'):'';
  $('h-other').textContent=cur.mode==='evo'?'ingreso':'evolución'}
 function renderHoja(){const p=P();$('sheet').className=cur.mode==='evo'?'mode-evo':'mode-ing';headerHoja();
  const note=noteOf(false);let st,changes=[];
  if(note&&note.state){st=note.state}
  else{const last=[...p.notes].reverse().find(n=>n.state&&n.fecha<cur.date)||[...p.notes].reverse().find(n=>n.state&&n.tipo!==cur.mode);
-  if(cur.mode==='evo'&&last){st=JSON.parse(JSON.stringify(last.state));Object.keys(st).forEach(k=>{if(isDaily(k))delete st[k]});
+  if(cur.mode==='evo'&&last){st=JSON.parse(JSON.stringify(last.state));Object.keys(st).forEach(k=>{if(isDaily(k))delete st[k]});st.cop_json=JSON.stringify({on:1,ok:[]});
+   if(st.arr_narr)st.arr_narr=st.arr_narr.split('\n').map(l=>HematoLote.fechasRelativas(l,last.fecha,null,cur.date)).join('\n');
    if(last.final){st.dx=last.final.dx;st.pp=last.final.pp;st.ind=last.final.ind}
    ['anam','am','i_cat','i_dx','i_det'].forEach(k=>delete st[k]);
    const n=daysBetween(last.fecha,cur.date);
@@ -2801,10 +2828,11 @@ function renderHoja(){const p=P();$('sheet').className=cur.mode==='evo'?'mode-ev
  }
  if(st.prem_txt===undefined)st.prem_txt='Clorfenamina 10mg EV\nBetametasona 4mg EV';
  st.sx_f=p.sexo==='f'?1:0;st.sx_m=p.sexo==='m'?1:0;
- setState(st);$('out').value=(note&&note.texto)||'';
+ setState(st);$('out').value=(note&&note.texto)||'';if(note&&note.cambios&&note.cambios.length&&!note.texto)changes=note.cambios;
  if(!V('ex_txt'))fillLabs(false);
  const ci=$('counters');ci.innerHTML=changes.length?'<b>Contadores actualizados (revisar):</b> '+changes.map(esc).join(' · '):'';ci.classList.toggle('vis',changes.length>0);
- $('alerts').classList.remove('vis');$('saved').textContent='';go('hoja')}
+ $('alerts').classList.remove('vis');$('saved').textContent='';go('hoja');renderImp();paintCopiado();if(!fotoR)fotoEstado('');
+ if(fotoPend[cur.pid]&&typeof fotoRender==='function'){fotoR={I:fotoPend[cur.pid].I,cv:fotoPend[cur.pid].cv,col:null};delete fotoPend[cur.pid];fotoRender();fotoEstado('Foto cargada en lote: revisa y aplica.')}}
 
 // ═══ CONTADORES ═══
 function incCounters(text,n,esInd){const ch=[];let t=text;
@@ -2830,11 +2858,12 @@ function aplicarPegar(){const r=separar($('mp-txt').value,mpForce);let ch=[];
  const nd=$('mp-fecha').value?daysBetween($('mp-fecha').value,cur.date):1;
  if($('mp-inc').checked&&nd>0){['dx','pp','ind'].forEach(k=>{const x=incCounters(r[k],nd,k==='ind');r[k]=x.text;ch.push(...x.ch)})}
  setV('dx',r.dx);setV('pp',r.pp);setV('ind',r.ind);
- let prop=lineasPropias(r.narr).join('\n');if($('mp-inc').checked&&nd>0&&prop){const x=incCounters(prop,nd);prop=x.text;ch.push(...x.ch)}
+ const inf=inferirDesdeNarr(r.narr);if(Object.keys(inf.st).length){CLIN_KEYS.forEach(k=>setC(k,false));Object.entries(inf.st).forEach(([k,v])=>{if(v===1)setC(k,true);else setV(k,v)});if(inf.sdet.length)setV('s_det',inf.sdet.join('. '));if(inf.st.qt_dia&&$('mp-inc').checked&&nd>0)setV('qt_dia',String(+inf.st.qt_dia+nd))}
+ let prop=inf.resto.join('\n');if($('mp-inc').checked&&nd>0&&prop){const x=incCounters(prop,nd);prop=x.text;ch.push(...x.ch)}
  setV('arr_narr',prop);if(r.ef)setV('ef_txt',r.ef);setV('ex_prev',r.ex);setV('ref_prev',$('mp-txt').value.trim());
  if(!V('qt_dia')){const m=r.dx.match(/(?:[Dd][ií]a|QT|D)\s*\+\s*(\d{1,3})/);if(m)setV('qt_dia',m[1])}
  const p=P(),id=$('mp-txt').value.match(/Paciente:\s*([^\n]+?)\s*-\s*RUN:\s*([\dkK.\-]+)/);
- if(id){if(!p.rut){p.rut=id[2].trim();saveDB();headerHoja()}if(matchScore(id[1],p.nombre)<2)alert(`Ojo: el documento es de "${id[1].trim()}", no coincide con ${p.nombre}.`)}
+ if(id){aprenderHuellas(p,{nombre:id[1],run:id[2]});saveDB();headerHoja();if(!HematoLote.inicialesCompat(id[1],p.nombre)&&matchScore(id[1],p.nombre)<2)alert(`Ojo: las iniciales del documento (${HematoLote.iniciales(id[1])}) no coinciden con ${p.nombre}.`)}
  cerrar('m-pegar');schedSave();
  const ci=$('counters');ci.innerHTML=`<b>Separado.</b> Revisa diagnósticos, planes e indicaciones. Se mantuvieron: ${r.ef?'examen físico':'—'}${r.ex?', exámenes/imágenes':''}${V('arr_narr')?', '+V('arr_narr').split('\n').length+' línea(s) propias de la narrativa':''}.`+(ch.length?' <b>Contadores:</b> '+ch.map(esc).join(' · '):'');ci.classList.add('vis')}
 const SECS=[['dx','Diagnósticos'],['narr','Narrativa'],['ef','Examen físico'],['ex','Exámenes'],['pp','Planes'],['ind','Indicaciones'],['skip','Descartar']];
@@ -2891,7 +2920,8 @@ function lineasPropias(narr){return narr.map(l=>l.trim()).filter(l=>l&&!STD.some
 // ═══ LECTURA DE ARCHIVOS (evolución anterior) ═══
 async function leerArchivoEvo(f){if(!f)return;$('mp-st').textContent='Leyendo '+f.name+'…';
  try{const buf=await f.arrayBuffer();let t;
-  if(/\.pdf$/i.test(f.name))t=limpiarSIRYC(await pdfLineas(buf));
+  if(/\.pdf$/i.test(f.name)){const d=await docTexto(f,x=>$('mp-st').textContent=x);t=limpiarSIRYC(d.texto)}
+  else if(/^image\//.test(f.type)){const d=await docTexto(f,x=>$('mp-st').textContent=x);if(d.hoja)throw new Error('es una foto de la hoja de enfermería: usa "Tomar foto" en la hoja');t=d.texto}
   else if(/\.docx$/i.test(f.name))t=await docxTexto(buf);
   else t=new TextDecoder('utf-8').decode(buf);
   $('mp-txt').value=t.replace(/\n{3,}/g,'\n\n').trim();$('mp-st').textContent=f.name+' cargado. Revisa y separa.';mpForce={};mpRender()}
@@ -2903,7 +2933,7 @@ async function pdfLineas(buf){const pdf=await pdfjsLib.getDocument({data:new Uin
   it.forEach(o=>{const r=rows.find(r=>Math.abs(r.y-o.y)<2.5);if(r)r.it.push(o);else rows.push({y:o.y,it:[o]})});
   rows.sort((a,b)=>b.y-a.y).forEach(r=>out.push(r.it.sort((a,b)=>a.x-b.x).map(o=>o.s).join(' ').replace(/\s+/g,' ').trim()))}
  return out.join('\n')}
-function limpiarSIRYC(t){const drop=/Este documento es privado|^Paciente:.*RUN|^Nombre Social|Fecha emisi[óo]n|^P[ÁA]G\.?\s*\d+\s*\/\s*\d+|REGISTRO CL[IÍ]NICO|^ELECTR[OÓ]NICO$|^EVOLUCI[OÓ]N M[EÉ]DICA$|MINISTERIO DE SALUD|HOSPITAL GUILLERMO|^BENAVENTE$|^SIRYC$/i;
+function limpiarSIRYC(t){const drop=/^P[áa]gina\s*\d+\s*(\/|de)\s*\d+|^Fecha\s*(de\s+\w+\s*)?:?\s*\d{1,2}[\/.\-]\d{1,2}[\/.\-]\d{2,4}.{0,40}$|^(Sala\s*\/\s*)?Cama\s*:?\s*\d|^Hora\s*:?\s*\d|Este documento es privado|^Paciente:.*RUN|^Nombre Social|Fecha emisi[óo]n|^P[ÁA]G\.?\s*\d+\s*\/\s*\d+|REGISTRO CL[IÍ]NICO|^ELECTR[OÓ]NICO$|^EVOLUCI[OÓ]N M[EÉ]DICA$|MINISTERIO DE SALUD|HOSPITAL GUILLERMO|^BENAVENTE$|^SIRYC$/i;
  const id=(t.match(/Paciente:[^\n]*RUN:[^\n]*/)||[''])[0];
  const L=t.split('\n').filter(l=>!drop.test(l.trim())).map(l=>l
   .replace(/^EVOLUCI[OÓ]N O COMENTARIO\s*\*?\s*/i,'')
@@ -2925,7 +2955,7 @@ async function docxTexto(buf){const u=new Uint8Array(buf),dv=new DataView(buf);l
  throw new Error('documento sin texto')}
 
 // ═══ EXÁMENES EN LA HOJA ═══
-function neuFromVals(v){if(!v)return null;if(v.RAN!=null){return v.RAN<500?'h_nprof':v.RAN<1500?'h_neu':'h_sinneu'}if(v.GB!=null&&v.GB<1000)return 'h_nprof';return null}
+function neuFromVals(v){if(!v)return null;if(v.RAN!=null){return v.RAN<=500?'h_nprof':v.RAN<1500?'h_neu':'h_sinneu'}if(v.GB!=null&&v.GB<1000)return 'h_nprof';return null}
 function fillLabs(force){const p=P(),t=cur.date;const L=(p.labs||[]).filter(l=>l.importado===t);
  if(!L.length){if(force)alert('No hay exámenes asignados hoy a este paciente. Procésalos en "Exámenes del día" o carga el PDF aquí.');return}
  if(force||!V('ex_txt'))setV('ex_txt',L.map(l=>l.line).join('\n'));
@@ -2941,11 +2971,11 @@ function addLab(p,r){p.labs=p.labs||[];if(!p.labs.some(l=>l.line===r.line))p.lab
 
 // ═══ GENERAR ═══
 function G(m,f){return (P().sexo||'m')==='f'?f:m}
-function generar(){saveDraft();const p=P(),A=[],L=[],a=G('o','a');const hoy=dm(cur.date);
+function generar(){saveDraft();const p=P(),A=[],L=[],a=G('o','a');const hoy=dm(cur.date);cur._arr=arrPorSis();
  if(!C('sx_f')&&!C('sx_m'))A.push('Sexo no marcado: se usa masculino.');
  // condición y tendencia
  const cond={c_cuidado:'De cuidado.',c_critico:G('Crítico.','Crítica.'),c_grave:'Grave.',c_regular:'En condición regular.',c_beg:'En BEG.',c_reserv:'Pronóstico reservado.',c_estable:'Estable, sin cambios.',c_agonico:'En etapa agónica.',c_confort:'En cuidados de confort.'};
- for(const k in cond)if(C(k))L.push(cond[k]);
+ {const PFX={c_cuidado:'Paciente de cuidado.',c_critico:G('Paciente crítico.','Paciente crítica.'),c_grave:'Paciente grave.',c_regular:'Paciente en condición regular.',c_beg:'Paciente en BEG.'};const cs=Object.keys(cond).filter(C);cs.forEach((k,i)=>L.push(i===0&&PFX[k]?PFX[k]:cond[k]))}
  let tn=C('t_est')?G('Estacionario','Estacionaria'):C('t_fav')?'Evolución favorable':C('t_desf')?'Evolución desfavorable en últimas horas':'';
  if(tn||V('t_det'))L.push(dot(tn+(V('t_det')?(tn?', ':'')+V('t_det'):'')));
  // tratamiento
@@ -2953,21 +2983,27 @@ function generar(){saveDraft();const p=P(),A=[],L=[],a=G('o','a');const hoy=dm(c
  if(C('qt_ini'))L.push(`Hoy ${hoy} inicia ${esq||'QT'}.`);
  else if(qd||esq){let s=qd?`Cursando día +${qd}${esq?' de '+esq:''}`:`En ${esq}`;if(C('tol_bien'))s+=', bien tolerada, sin incidentes';else if(C('tol_irreg'))s+=', con irregular tolerancia';else if(C('tol_inc'))s+=', con incidentes';L.push(s+'.')}
  if(C('qt_fin'))L.push(`Hoy ${hoy} completa ${esq||'QT'}.`);
+ impLineas('qt').forEach(x=>L.push(x));
  // hematológico
  const H=[],gb=num(V('l_gb')),ran=num(V('l_ran')),hb=numDec(V('l_hb'));let plt=num(V('l_plt'));if(plt!=null&&plt<1000)plt*=1000;
  if(C('h_apl'))H.push('En aplasia medular post QT.');
+ const labHoy=(p.labs||[]).filter(l=>l.importado===cur.date);const blast=labHoy.length&&labHoy[labHoy.length-1].vals?labHoy[labHoy.length-1].vals.Blastos:null;
+ const prevN=[...p.notes].reverse().find(n=>n.state&&n.fecha<cur.date&&n.tipo==='evo');const eraNeu=prevN&&(prevN.state.h_nprof||prevN.state.h_neu);
  if(C('h_nprof'))H.push(G('Neutropénico profundo','Neutropénica profunda')+(ran!=null&&ran>0?', RAN '+fmtN(ran):gb!=null?', GB '+fmtN(gb):'')+'.');
  else if(C('h_neu'))H.push(G('Neutropénico','Neutropénica')+(ran!=null?', RAN '+fmtN(ran):'')+'.');
- else if(C('h_sinneu'))H.push('Sin neutropenia.');
+ else if(C('h_sinneu'))H.push(eraNeu?'Ya sin neutropenia'+(ran!=null?', RAN '+fmtN(ran):'')+'.':'Sin neutropenia.');
+ if(blast!=null&&blast>0)H.push('Blastos SP '+dec(blast)+' %.');
  if(C('tx_no'))H.push(`Sin requerimiento transfusional hoy ${hoy}.`);
  else{const tx=[];if(C('tx_gr'))tx.push(`${V('tx_gr_u')||'?'}U GR${hb!=null?' (Hb '+dec(hb)+')':''}`);if(C('tx_plt'))tx.push(`${V('tx_plt_u')||'?'}U PLT${plt!=null?' (PLT '+fmtN(plt)+')':''}`);if(C('tx_pfc'))tx.push(`${V('tx_pfc_u')||'?'}U PFC`);if(C('tx_crio'))tx.push(`${V('tx_crio_u')||'?'}U crioprecipitado${V('l_fib')?' (fibrinógeno '+V('l_fib')+')':''}`);
   if(tx.length)H.push(`Hoy ${hoy} con requerimiento transfusional: ${tx.join(', ')}${C('tx_p')?', (P).':', sin incidentes.'}`)}
  if(C('co_sin'))H.push('Sin coagulopatía evidente.');else if(C('co_reg'))H.push('Coagulopatía en regresión.');else if(C('co_act'))H.push('Coagulopatía activa.');
  if(C('co_sang'))H.push('Con sangrado activo.');
  if(H.length)L.push(H.join(' '));
+ impLineas('hem').forEach(x=>L.push(x));
  // pendientes y resultados
  const pe=OPT.PEND.filter(([k])=>C(k)).map(x=>x[2]);if(pe.length)L.push(`Pendiente: ${pe.join(', ')}.`);
  if(V('res_dia'))L.push(dot(cap(V('res_dia'))));
+ impLineas('est').forEach(x=>L.push(x));
  // infeccioso
  const I=[];let t0='';const T=numDec(V('sv_t'));
  if(C('i_afeb'))t0='Afebril';else if(C('i_feb'))t0='Febril'+(T!=null?', T° máx '+dec(T):'');else if(C('i_febaf'))t0='Febril en últimas 24h, actualmente afebril';
@@ -2991,23 +3027,25 @@ function generar(){saveDraft();const p=P(),A=[],L=[],a=G('o','a');const hoy=dm(c
   let sw=Object.keys(SW).filter(C).map(k=>SW[k]);if(sw.length)N.push(dot('Refiere '+sw.join(', ')));if(V('s_det'))N.push(dot(cap(V('s_det'))))}
  const VO=[];if(C('vo_buena'))VO.push('Buena tolerancia oral.');else if(C('vo_parcial'))VO.push('Tolerancia oral parcial.');else if(C('vo_cero'))VO.push('En régimen cero.');
  if(C('vo_sne'))VO.push('Con SNE.');if(C('vo_npt'))VO.push('Con NPT.');
- if(N.length)L.push(N.join(' '));if(Iline)L.push(Iline);
+ if(N.length)L.push(N.join(' '));impLineas('neu').forEach(x=>L.push(x));if(Iline)L.push(Iline);impLineas('inf').forEach(x=>L.push(x));
  // hemodinamia
  let hd='';if(C('hd_est'))hd=`Hemodinamia estable autosostenida, bien perfundid${a}.`;else if(C('hd_dva'))hd=dot('Hemodinamia con apoyo de DVA'+(V('hd_dva_txt')?': '+V('hd_dva_txt'):''));else if(C('hd_trans'))hd='Episodio hemodinámico transitorio, recuperado.';
- if(C('hd_taq'))hd+=(hd?' ':'')+G('Taquicárdico.','Taquicárdica.');if(C('hd_arr'))hd+=(hd?' ':'')+'Con arritmia.';if(hd)L.push(hd);
+ if(C('hd_taq'))hd+=(hd?' ':'')+G('Taquicárdico.','Taquicárdica.');if(C('hd_arr'))hd+=(hd?' ':'')+'Con arritmia.';if(hd)L.push(hd);impLineas('hd').forEach(x=>L.push(x));
  // respiratorio
  let sup='';if(C('r_amb'))sup='FiO₂ ambiental';else if(C('r_cn'))sup=`O₂ por CN a ${V('r_cn_l')||'?'} L/min`;else if(C('r_mmv'))sup=`O₂ por MMV/Venturi al ${V('r_mmv_p')||'?'}%`;else if(C('r_cnaf'))sup=`CNAF ${V('r_cnaf_l')||'?'} L/min, FiO₂ ${V('r_cnaf_p')||'?'}%`;else if(C('r_vmni'))sup=`VMNI con PEEP ${V('r_peep')||'?'} cmH₂O y FiO₂ ${V('r_vmni_p')||'?'}%`;else if(C('r_vmi'))sup='VMI';
  const dis=[];if(C('r_wob'))dis.push('WOB aumentado');if(C('r_taq'))dis.push('taquipnea');if(C('r_desat'))dis.push('desaturación');
  if(sup||dis.length||C('r_sinap')){let r=dis.length?(sup?cap(sup)+', con ':'Con ')+dis.join(', '):'Intercambio gaseoso conservado'+(sup?', '+sup:'');if(C('r_mejor'))r+=', con buena respuesta a soporte';if(C('r_sinap')&&!dis.length)r+=', sin apremio respiratorio';L.push(dot(r))}
+ impLineas('resp').forEach(x=>L.push(x));
  // renal
  const RN={rn_cons:'Fx renal conservada',rn_rec:'Fx renal en recuperación',rn_det:'Función renal en deterioro',rn_falla:'Falla renal'};let rn=Object.keys(RN).filter(C).map(k=>RN[k])[0]||'';
  let dsum=0,dany=false;for(let i=1;i<=6;i++){const n=num(V('d'+i));if(n!=null){dsum+=n;dany=true}}
- const bh=bhTotal();const R2=[];if(dany)R2.push(`Diuresis ${fmtN(dsum)} mL/24h`);if(C('rn_bhnd'))R2.push('BH no disponible');else if(bh!=null)R2.push(`BH ${bh>0?'(+)':bh<0?'(-)':''} ${fmtN(Math.abs(bh))} mL/24h`.replace('  ',' '));
- let rl=(rn?rn+'.':'')+(R2.length?' '+R2.join(', ')+'.':'');if(C('rn_diur'))rl+=' Con diurético.';if(C('rn_hidr'))rl+=' Con hidratación EV.';if(rl.trim())L.push(rl.trim());
- const DP={dp_norm:'Deposiciones (+) normales.',dp_bland:'Deposiciones blandas.',dp_liq:'Deposiciones líquidas.'};let dp=Object.keys(DP).filter(C).map(k=>DP[k])[0]||'';if(C('dp_sin'))dp=`Sin deposiciones${V('dp_sin_h')?' hace '+V('dp_sin_h')+'h':''}.`;if(C('dp_ost'))dp+=(dp?' ':'')+'Ostomía funcionante.';const vd=[...VO,dp].filter(Boolean).join(' ');if(vd)L.push(vd);
+ const bh=bhTotal();const R2=[];if(dany)R2.push(`Diuresis ${fmtN(dsum)} mL/24h`);if(C('rn_bhnd'))R2.push('BH no disponible');else if(bh!=null)R2.push(`BH ${bh>0?'(+)':bh<0?'(-)':''}${fmtN(Math.abs(bh))} mL/24h`);
+ let rl=(rn?rn+'.':'')+(R2.length?' '+R2.join(', ')+'.':'');if(C('rn_diur'))rl+=' Con diurético.';if(C('rn_hidr'))rl+=' Con hidratación EV.';if(rl.trim())L.push(rl.trim());impLineas('ren').forEach(x=>L.push(x));
+ const DP={dp_norm:'Deposiciones (+) normales.',dp_bland:'Deposiciones blandas.',dp_liq:'Deposiciones líquidas.'};let dp=Object.keys(DP).filter(C).map(k=>DP[k])[0]||'';if(C('dp_sin'))dp=`Sin deposiciones${V('dp_sin_h')?' hace '+V('dp_sin_h')+'h':''}.`;if(C('dp_ost'))dp+=(dp?' ':'')+'Ostomía funcionante.';const vd=[...VO,dp].filter(Boolean).join(' ');if(vd)L.push(vd);impLineas('dig').forEach(x=>L.push(x));
  if(V('rn_iones'))L.push(dot(cap(V('rn_iones'))));
- if(V('arr_narr'))V('arr_narr').split('\n').filter(x=>x.trim()).forEach(x=>L.push(dot(x)));
+
  if(V('ci_inter'))V('ci_inter').split('\n').filter(x=>x.trim()).forEach(x=>L.push(dot(x)));
+ impLineas('otro').forEach(x=>L.push(x));
  if(C('ci_sindis'))L.push('Sin evidencias de otras disfunciones orgánicas.');if(C('ci_sinint'))L.push('Sin otras intercurrencias.');
  if(C('ci_alta'))L.push(dot('En plan de eventual alta'+(V('ci_alta_f')?' el '+V('ci_alta_f'):'')));
  // EF
@@ -3015,7 +3053,7 @@ function generar(){saveDraft();const p=P(),A=[],L=[],a=G('o','a');const hoy=dm(c
  if(!V('ef_txt'))setV('ef_txt',efL.join('\n'));
  const EF='Al examen físico:\n'+[svLine(),...efL].filter(Boolean).map(x=>'- '+x).join('\n');
  // exámenes, planes, indicaciones
- const ex=[fmtExamenes(V('ex_txt')),V('ex_prev')].filter(Boolean).join('\n');const ppF=aplicarNovedades(V('pp'),hoy,A);const indF=aplicarIndicaciones(V('ind'),A);
+ const ex=[fmtExamenes(V('ex_txt')),V('ex_prev'),...impLineas('lab')].filter(Boolean).join('\n');const ppF=aplicarNovedades(V('pp'),hoy,A);const indF=aplicarIndicaciones(V('ind'),A);
  const TXP=txPlan(),TXI=txInd();let ppOut,indOut;
  const MODO=modoDia(cur.date);
  if(cur.mode==='ing'||MODO==='full')ppOut=[ppF,...TXP].filter(Boolean).join('\n');
@@ -3026,6 +3064,10 @@ function generar(){saveDraft();const p=P(),A=[],L=[],a=G('o','a');const hoy=dm(c
  let dx=V('dx');if(dx&&!/^\s*(diagn|dg\b)/i.test(dx))dx=(cur.mode==='ing'?'Diagnósticos de ingreso:\n':'Diagnósticos:\n')+dx;
  if(cur.mode==='ing'&&V('am')&&!/AM:/i.test(dx))dx+='\nAM: '+V('am');
  // alertas
+ {const cp=copPorConfirmar();if(cp.length)A.push('Copiado de ayer sin confirmar: '+cp.map(x=>cap(x.toLowerCase())).join(', ')+'. El texto se generó igual.');
+  const ni=impNota();if(ni){const sinRev=ni.imp.filter(x=>x.estado==='incl'&&!['dx','pp','ind','cond','ef'].includes(x.sys)).length;if(sinRev)A.push(sinRev+' novedad(es) importada(s) incluida(s) sin marcar como revisadas.');
+   const prop=ni.imp.filter(x=>x.estado==='incl'&&['dx','pp','ind','cond'].includes(x.sys)).length;if(prop)A.push(prop+' propuesta(s) de diagnósticos / planes / indicaciones / condición sin aplicar (no van en el texto).')}
+  const falta=[];if(!['sv_pas','sv_fc','sv_t','sv_sat'].some(k=>V(k)))falta.push('signos vitales');if(!V('d1')&&!V('bh1')&&!V('bh24')&&!C('rn_bhnd'))falta.push('diuresis / BH');if(!V('ex_txt'))falta.push('exámenes de hoy');if(falta.length)A.push('Falta de hoy: '+falta.join(', ')+'.')}
  checkAlerts(A,{T,gb,ran,hb,plt,dx});
  const blocks=[dx,cur.mode==='ing'?V('anam'):'',L.join('\n'),EF,ex,ppOut,indOut].filter(b=>b&&b.trim());
  const out=blocks.join('\n\n');$('out').value=out;
@@ -3121,9 +3163,9 @@ function copiar(){copyTxt($('out').value);const b=$('bcopy');b.textContent='Copi
 // ═══ PROCESADOR (pantalla) ═══
 let pfiles=[],presult=[];
 function matchScore(a,b){const ta=norm(a).split(/[\s,]+/).filter(x=>x.length>2),tb=new Set(norm(b).split(/[\s,]+/).filter(x=>x.length>2));return ta.filter(x=>tb.has(x)).length}
-function matchPatient(name){let best='',bs=0;Object.values(DB.patients).filter(p=>p.activo).forEach(p=>{const s=matchScore(name,p.nombre);if(s>bs){bs=s;best=p.id}});return bs>=2?best:''}
+function matchPatient(name){if(name){const a=HematoLote.asociar({nombre:name},Object.values(DB.patients).filter(p=>p.activo));if(a.pid&&a.seguro)return a.pid}let best='',bs=0;Object.values(DB.patients).filter(p=>p.activo).forEach(p=>{const s=matchScore(name,p.nombre);if(s>bs){bs=s;best=p.id}});return bs>=2?best:''}
 async function procesarArchivo(fname,buffer){const text=await extractPdfText(buffer);const name=extractPatientName(text);const ex=extractExamens(text);const line=buildDataLine(ex);
- const vals={};['GB','RAN','Hb','PLT','Fibri'].forEach(k=>{const v=numericValue(ex.examenMap,k);if(v!=null)vals[k]=v});
+ const vals={};['GB','RAN','Hb','PLT','Fibri','Blastos'].forEach(k=>{const v=numericValue(ex.examenMap,k);if(v!=null)vals[k]=v});
  return {name,date:ex.date,line,vals,alerts:validateExamens(ex)}}
 function initDrop(){const d=$('drop');d.onclick=()=>{const i=document.createElement('input');i.type='file';i.accept='application/pdf';i.multiple=true;i.onchange=()=>addPFiles(i.files);i.click()};
  d.ondragover=e=>{e.preventDefault();d.classList.add('act')};d.ondragleave=()=>d.classList.remove('act');d.ondrop=e=>{e.preventDefault();d.classList.remove('act');addPFiles(e.dataTransfer.files)}}
@@ -3147,7 +3189,7 @@ async function procesarTodo(){if(!pfiles.length)return;$('bproc').disabled=true;
 function renderAsg(){if(!presult.length){$('asg').innerHTML='';return}const act=Object.values(DB.patients).filter(p=>p.activo).sort((a,b)=>BEDS.indexOf(a.cama)-BEDS.indexOf(b.cama));
  $('asg').innerHTML=`<div class="sec"><div class="st">ASIGNAR A CAMAS</div><table class="asg"><tr><th>Paciente en PDF</th><th>Exámenes</th><th>Cama / paciente</th></tr>${presult.map((r,i)=>`<tr><td>${esc(r.name)}</td><td class="mono">${r.entries.map(e=>esc(e.line)).join('<br>')}</td><td><select onchange="presult[${i}].pid=this.value"><option value="">— no asignar —</option>${act.map(p=>`<option value="${p.id}"${p.id===r.pid?' selected':''}>${p.cama} · ${esc(p.nombre)}</option>`).join('')}</select></td></tr>`).join('')}</table>
  <div class="row" style="margin-top:6px"><button class="btn gr" onclick="guardarAsg()">Guardar en fichas</button><span class="note">Los valores llenan GB/RAN/Hb/PLT/fibrinógeno y la línea va a "Exámenes" de la evolución de hoy.</span></div></div>`}
-function guardarAsg(){let n=0;presult.forEach(r=>{if(!r.pid)return;const p=DB.patients[r.pid];r.entries.forEach(e=>{addLab(p,e);n++})});saveDB();alert(`${n} resultado(s) guardado(s) en fichas.`)}
+function guardarAsg(){let n=0;presult.forEach(r=>{if(!r.pid)return;const p=DB.patients[r.pid];if(r.name&&!/^\[Sin nombre/.test(r.name))aprenderHuellas(p,{nombre:r.name});r.entries.forEach(e=>{addLab(p,e);n++})});saveDB();alert(`${n} resultado(s) guardado(s) en fichas.`)}
 
 // ═══ HISTORIAL ═══
 function renderBuscar(){const q=norm($('bq').value);const L=Object.values(DB.patients).filter(p=>!q||norm(p.nombre).includes(q)||norm(p.rut).includes(q)).sort((a,b)=>(b.activo-a.activo)||a.nombre.localeCompare(b.nombre));
@@ -3169,7 +3211,8 @@ let impModo='merge';
 function combinar(d){let nP=0,nN=0;const conf=[];
  Object.values(d.patients).forEach(ip=>{const lp=DB.patients[ip.id];
   if(!lp){DB.patients[ip.id]=ip;nP++;nN+=(ip.notes||[]).length;return}
-  if((ip.upd||0)>(lp.upd||0)){['nombre','rut','sexo','fingreso','falta','activo','cama','dx','pp','ind','upd','episodios'].forEach(k=>{if(k in ip)lp[k]=ip[k]})}
+  if(ip.hue){lp.hue=lp.hue||{r:[],t:[]};['r','t'].forEach(k=>(ip.hue[k]||[]).forEach(x=>{if(!lp.hue[k].includes(x))lp.hue[k].push(x)}))}
+  if((ip.upd||0)>(lp.upd||0)){['nombre','sexo','fingreso','falta','activo','cama','dx','pp','ind','upd','episodios'].forEach(k=>{if(k in ip)lp[k]=ip[k]})}
   (ip.notes||[]).forEach(inN=>{const i=lp.notes.findIndex(x=>x.fecha===inN.fecha&&x.tipo===inN.tipo);
    if(i<0){lp.notes.push(inN);nN++}else if((inN.upd||0)>(lp.notes[i].upd||0)){lp.notes[i]=inN;nN++}});
   lp.notes.sort((a,b)=>a.fecha<b.fecha?-1:a.fecha>b.fecha?1:0);
@@ -3177,10 +3220,11 @@ function combinar(d){let nP=0,nN=0;const conf=[];
  BEDS.forEach(b=>DB.beds[b]=null);
  Object.values(DB.patients).filter(p=>p.activo&&p.cama).sort((a,b)=>(a.upd||0)-(b.upd||0)).forEach(p=>{const prev=DB.beds[p.cama];if(prev&&prev!==p.id){const o=DB.patients[prev];o.cama='';conf.push(`${o.nombre} quedó sin cama (cama ${p.cama} ocupada por ${p.nombre})`)}DB.beds[p.cama]=p.id});
  if(d.modo)DB.modo=Object.assign({},d.modo,DB.modo||{});
+ DB.reglas=DB.reglas||[];(d.reglas||[]).forEach(r=>{if(!DB.reglas.some(x=>x.id===r.id))DB.reglas.push(r)});
  return {nP,nN,conf}}
 function importar(f){if(!f)return;const r=new FileReader();r.onload=()=>{try{const d=JSON.parse(r.result);if(!d.patients||!d.beds)throw new Error('formato no reconocido');
- if(impModo==='replace'){if(!confirm('Esto reemplaza TODOS los datos de este equipo por el respaldo. ¿Continuar?'))return;DB=d;loadDBFix();saveDB();alert('Respaldo importado (reemplazo).');go('camas');return}
- const res=combinar(d);loadDBFix();saveDB();alert(`Respaldo combinado: ${res.nP} paciente(s) nuevo(s), ${res.nN} nota(s) agregada(s) o actualizada(s).`+(res.conf.length?'\n\nRevisar camas:\n'+res.conf.join('\n'):''));go('camas')}catch(e){alert('No se pudo importar: '+e.message)}};r.readAsText(f);$('fimp').value=''}
+ if(impModo==='replace'){if(!confirm('Esto reemplaza TODOS los datos de este equipo por el respaldo. ¿Continuar?'))return;DB=d;loadDBFix();migrarHuellas();saveDB();alert('Respaldo importado (reemplazo).');go('camas');return}
+ const res=combinar(d);loadDBFix();migrarHuellas();saveDB();alert(`Respaldo combinado: ${res.nP} paciente(s) nuevo(s), ${res.nN} nota(s) agregada(s) o actualizada(s).`+(res.conf.length?'\n\nRevisar camas:\n'+res.conf.join('\n'):''));go('camas')}catch(e){alert('No se pudo importar: '+e.message)}};r.readAsText(f);$('fimp').value=''}
 function loadDBFix(){BEDS.forEach(b=>{if(!(b in DB.beds))DB.beds[b]=null})}
 function renderUso(){const s=(localStorage.getItem(KEY)||'').length;const np=Object.keys(DB.patients).length;$('uso').textContent=`${np} paciente(s) · ${(s/1024).toFixed(0)} KB usados de ~5.000 KB disponibles en el navegador.`}
 
@@ -3273,6 +3317,209 @@ function fotoAplicar(){if(!fotoR)return;const {I}=fotoR;const hecho=[];
 function fotoDescartar(){fotoR=null;$('foto-panel').innerHTML='';$('foto-panel').style.display='none'}
 document.addEventListener('paste',e=>{if(!$('scr-hoja')||!$('scr-hoja').classList.contains('vis'))return;const it=[...((e.clipboardData||{}).items||[])].find(x=>x.type&&x.type.startsWith('image/'));if(!it)return;e.preventDefault();
  if(location.protocol==='file:'){alert('La lectura de fotos funciona en la app publicada (johnthebullbullet.github.io/hemato).');return}fotoProcesar(it.getAsFile())});
+
+// ═══ CARGA EN LOTE (fase 3) ═══
+const LT=HematoLote;let lFiles=[],lPastes=[],lRes=null,fotoPend={};
+function lInit(){const d=$('ldrop');if(!d||d.dataset.ok)return;d.dataset.ok=1;
+ d.onclick=()=>{const i=document.createElement('input');i.type='file';i.multiple=true;i.accept='.pdf,.txt,.docx,image/*';i.onchange=()=>lAddFiles(i.files);i.click()};
+ d.ondragover=e=>{e.preventDefault();d.classList.add('act')};d.ondragleave=()=>d.classList.remove('act');d.ondrop=e=>{e.preventDefault();d.classList.remove('act');lAddFiles(e.dataTransfer.files)};
+ if(!$('l-fpeg').value)$('l-fpeg').value=ayerISO();if(!lPastes.length)lAddPaste();lRender()}
+async function lAddFiles(fl){for(const f of fl){if(lFiles.length>=80)break;lFiles.push({name:f.name,type:f.type,file:f})}lRender()}
+function lAddPaste(){lPastes.push({cama:'',texto:''});lRender()}
+function lCamasOpts(sel){const act=Object.values(DB.patients).filter(p=>p.activo&&p.cama).sort((a,b)=>BEDS.indexOf(a.cama)-BEDS.indexOf(b.cama));
+ return `<option value="">— detectar por encabezado —</option>`+act.map(p=>`<option value="${p.id}"${p.id===sel?' selected':''}>${p.cama} · ${esc(p.nombre)}</option>`).join('')}
+function lRender(){$('lfiles').innerHTML=lFiles.map((f,i)=>`<div><span>${esc(f.name)}</span><span style="cursor:pointer;color:var(--rd)" onclick="lFiles.splice(${i},1);lRender()">✕</span></div>`).join('')||'<div class="note">Sin archivos.</div>';
+ $('lpastes').innerHTML=lPastes.map((x,i)=>`<div class="lpaste"><div class="row"><b>Texto ${i+1} · cama</b><select onchange="lPastes[${i}].cama=this.value">${lCamasOpts(x.cama)}</select><span style="cursor:pointer;color:var(--rd);margin-left:auto" onclick="lPastes.splice(${i},1);lRender()">✕</span></div><textarea rows="5" class="mono" oninput="lPastes[${i}].texto=this.value" placeholder="Pega aquí controles (CMR), comentarios de la entrega o una evolución…">${esc(x.texto)}</textarea></div>`).join('')}
+function lLimpiar(){lFiles=[];lPastes=[];lRes=null;$('lres').innerHTML='';$('lst').textContent='';lAddPaste()}
+function lEstado(t){$('lst').textContent=t}
+// texto de un archivo: PDF con texto, PDF escaneado (OCR), imagen (OCR), docx, txt
+async function lineasOCR(items){if(!items.length)return '';const G=items.map(o=>{const ys=o.box.map(p=>p[1]),xs=o.box.map(p=>p[0]);return {t:o.text,y0:Math.min(...ys),y1:Math.max(...ys),x:Math.min(...xs)}});
+ const hs=G.map(g=>g.y1-g.y0).sort((a,b)=>a-b),mh=hs[Math.floor(hs.length/2)]||20;G.sort((a,b)=>(a.y0+a.y1)/2-(b.y0+b.y1)/2);
+ const L=[];G.forEach(g=>{const yc=(g.y0+g.y1)/2,l=L[L.length-1];if(l&&Math.abs(yc-l.yc)<mh*0.55){l.it.push(g);l.yc=(l.yc*(l.it.length-1)+yc)/l.it.length}else L.push({yc,it:[g]})});
+ let out=[],prev=null;L.forEach(l=>{if(prev!=null&&l.yc-prev>mh*2.2)out.push('');out.push(l.it.sort((a,b)=>a.x-b.x).map(g=>g.t).join(' '));prev=l.yc});return out.join('\n')}
+function lienzoMax(src,w,h,max){const k=Math.min(1,max/Math.max(w,h));const c=document.createElement('canvas');c.width=Math.round(w*k);c.height=Math.round(h*k);c.getContext('2d').drawImage(src,0,0,c.width,c.height);return c}
+async function docTexto(f,estado){const name=f.name||'archivo';const buf=await f.arrayBuffer();
+ if(/\.pdf$/i.test(name)||f.type==='application/pdf'){let t=await pdfLineas(buf.slice(0));
+  if(t.replace(/\s/g,'').length>=80)return {texto:t,ocr:false,buf};
+  if(location.protocol==='file:')throw new Error('PDF escaneado: la lectura por imagen funciona en la app publicada');
+  const pdf=await pdfjsLib.getDocument({data:new Uint8Array(buf.slice(0))}).promise;const partes=[];
+  for(let i=1;i<=pdf.numPages;i++){estado&&estado(`${name}: leyendo página ${i} de ${pdf.numPages} por imagen…`);const pg=await pdf.getPage(i);const v0=pg.getViewport({scale:1});const sc=Math.min(3,2000/Math.max(v0.width,v0.height));const vp=pg.getViewport({scale:sc});
+   const c=document.createElement('canvas');c.width=Math.round(vp.width);c.height=Math.round(vp.height);await pg.render({canvasContext:c.getContext('2d'),viewport:vp}).promise;const r=await ocrLeer(c);partes.push(await lineasOCR(r.items))}
+  return {texto:partes.join('\n\n'),ocr:true,buf}}
+ if(/^image\//.test(f.type)||/\.(png|jpe?g|heic|webp)$/i.test(name)){if(location.protocol==='file:')throw new Error('las imágenes se leen en la app publicada');
+  const bm=await fotoBitmap(f);const c=lienzoMax(bm,bm.width,bm.height,1600);estado&&estado(`${name}: leyendo imagen…`);const r=await ocrLeer(c);
+  const I=HematoHoja.interpretar(r.items);if(I.sv||I.bh.length){return {hoja:{I,cv:fotoLienzo(bm,0)},ocr:true}}
+  return {texto:await lineasOCR(r.items),ocr:true}}
+ if(/\.docx$/i.test(name))return {texto:await docxTexto(buf)};
+ return {texto:new TextDecoder('utf-8').decode(buf)}}
+function esLab(t){return /HEMOGRAMA|VALOR(?:ES)?\s+DE\s+REFERENCIA|RESULTADO\s+UNIDAD|LABORATORIO CL[IÍ]NICO|N[°º]\s*DE\s*ORDEN/i.test(t)&&!/EVOLUCI[OÓ]N|DIAGN[OÓ]STICOS|PROBLEMAS Y PLANES/i.test(t)}
+// notas de un documento de evolución (un PDF puede traer varias)
+function partirDoc(texto){const L=texto.split('\n');const idx=[];L.forEach((l,i)=>{if(/^\s*Paciente\s*:?.*RUN/i.test(l))idx.push(i)});
+ if(idx.length<=1)return [{texto,marca:null,hora:null}];const out=[];idx.forEach((s,k)=>{const e=k+1<idx.length?idx[k+1]:L.length;let ini=k===0?0:s;out.push({texto:L.slice(ini,e).join('\n'),marca:null,hora:null})});return out}
+function notasDeDoc(texto,fuente,orden,pegado){const brutas=pegado?LT.partirNotas(texto):partirDoc(texto);const cab0=LT.cabecera(texto);
+ return brutas.map((b,i)=>{const cab={...cab0,...LT.cabecera(b.texto)};return {texto:limpiarSIRYC(b.texto).replace(/^Paciente:[^\n]*\n*/,''),crudo:b.texto,fecha:cab.fecha||null,hora:cab.hora||b.hora||null,cab,fuente,marca:b.marca,orden:orden*100+i}})}
+function lPacientes(){return Object.values(DB.patients).filter(p=>p.activo).map(p=>({id:p.id,cama:p.cama,nombre:p.nombre,hue:p.hue}))}
+async function lProcesar(){if(!lFiles.length&&!lPastes.some(x=>x.texto.trim())){alert('Agrega archivos o texto.');return}
+ $('lgo').disabled=true;const R={pac:{},porAsociar:[],errores:[],docs:[]};const hoy=todayISO(),fpeg=$('l-fpeg').value||ayerISO();const pac=lPacientes();
+ const slot=pid=>R.pac[pid]=R.pac[pid]||{notas:[],labs:[],hojas:[],fuentes:new Set()};
+ const asignar=(nota,pidFijo)=>{let a=pidFijo?{pid:pidFijo,motivo:'elegido',seguro:true}:LT.asociar(nota.cab||{},pac);
+  if(a.pid&&a.seguro){slot(a.pid).notas.push(nota);slot(a.pid).fuentes.add(nota.fuente);return}
+  R.porAsociar.push({tipo:'nota',nota,sug:a.pid,motivo:a.motivo})};
+ let k=0;
+ for(const f of lFiles){k++;lEstado(`Leyendo ${k} de ${lFiles.length}: ${f.name}`);
+  try{const d=await docTexto(f.file,lEstado);
+   if(d.hoja){R.porAsociar.push({tipo:'hoja',hoja:d.hoja,fuente:f.name,sug:null,motivo:'foto de hoja de enfermería'});R.docs.push({fuente:f.name,tipo:'hoja de enfermería',texto:''});continue}
+   if(esLab(d.texto)){if(!d.buf)throw new Error('examen sin PDF');const r=await procesarArchivo(f.name,d.buf.slice(0));const cab=LT.cabecera(d.texto);
+    const a=LT.asociar({nombre:r.name||cab.nombre,run:cab.run},pac);const pid=a.pid&&a.seguro?a.pid:(matchPatient(r.name||'')||null);
+    R.docs.push({fuente:f.name,tipo:'examen',texto:d.texto});
+    if(pid){slot(pid).labs.push(r);slot(pid).fuentes.add(f.name)}else R.porAsociar.push({tipo:'lab',lab:r,fuente:f.name,nombre:r.name,sug:a.pid,motivo:a.motivo});continue}
+   const notas=notasDeDoc(d.texto,f.name,k);R.docs.push({fuente:f.name,tipo:'evolución'+(d.ocr?' (leída por imagen)':''),texto:d.texto,ocr:d.ocr});
+   if(!notas.length)throw new Error('sin texto reconocible');
+   notas.forEach(n=>{if(!n.fecha){n.fecha=fpeg;n.sinFecha=true}asignar(n)})}
+  catch(e){R.errores.push({fuente:f.name,error:e.message||String(e)})}}
+ lPastes.forEach((x,i)=>{if(!x.texto.trim())return;const fuente='Texto '+(i+1);try{
+  const ns=notasDeDoc(x.texto,fuente,1000+i,true);R.docs.push({fuente,tipo:'texto pegado',texto:x.texto});
+  ns.forEach(n=>{if(!n.cab.fecha){n.fecha=fpeg;n.sinFecha=true}if(!n.hora)n.posterior=true;asignar(n,x.cama||null)})}catch(e){R.errores.push({fuente,error:e.message})}});
+ lRes=R;$('lgo').disabled=false;lEstado(`Listo: ${Object.keys(R.pac).length} paciente(s) con datos, ${R.porAsociar.length} por asociar, ${R.errores.length} error(es). Revisa y aplica.`);lRenderRes()}
+function lRenderRes(){const R=lRes;if(!R)return;const act=Object.values(DB.patients).filter(p=>p.activo).sort((a,b)=>BEDS.indexOf(a.cama)-BEDS.indexOf(b.cama));
+ const libres=BEDS.filter(b=>!DB.beds[b]);let h='';
+ const filas=Object.entries(R.pac).sort((a,b)=>BEDS.indexOf(DB.patients[a[0]].cama)-BEDS.indexOf(DB.patients[b[0]].cama)).map(([pid,s])=>{const p=DB.patients[pid];
+  return `<tr><td><b>${esc(p.cama||'—')}</b></td><td>${esc(p.nombre)}</td><td>${s.notas.length} nota(s)${s.labs.length?', '+s.labs.length+' examen(es)':''}${s.hojas.length?', hoja de enfermería':''}</td><td class="note">${esc([...s.fuentes].join(', '))}</td><td>${s.estado?esc(s.estado):'—'}</td><td>${s.aplicado?`<button class="btn sm" onclick="abrirHoja('${pid}','evo')">Abrir</button>`:''}</td></tr>`}).join('');
+ h+=`<div class="sec"><div class="st">PACIENTES CON DATOS</div><table class="asg"><tr><th>Cama</th><th>Paciente</th><th>Cargado</th><th>Fuentes</th><th>Estado</th><th></th></tr>${filas||'<tr><td colspan="6" class="note">Ninguno todavía.</td></tr>'}</table></div>`;
+ if(R.porAsociar.length){h+=`<div class="sec"><div class="st">POR ASOCIAR (no se pudo reconocer al paciente con seguridad)</div><table class="asg"><tr><th>Documento</th><th>Motivo</th><th>Asignar a</th></tr>${R.porAsociar.map((x,i)=>{
+  const d=x.tipo==='nota'?`${esc(x.nota.fuente)} · ${x.nota.cab&&x.nota.cab.nombre?'iniciales '+esc(LT.iniciales(x.nota.cab.nombre)):'sin nombre'}${x.nota.cab&&x.nota.cab.cama?' · cama '+esc(x.nota.cab.cama):''}${x.nota.fecha?' · '+dm(x.nota.fecha):''}`:x.tipo==='lab'?`${esc(x.fuente)} · examen · ${x.nombre?'iniciales '+esc(LT.iniciales(x.nombre)):'sin nombre'}`:`${esc(x.fuente)} · foto de hoja de enfermería`;
+  const nuevo=x.tipo==='nota'&&x.nota.cab&&x.nota.cab.cama&&!DB.beds[x.nota.cab.cama]?`<option value="nuevo:${x.nota.cab.cama}"${x.asig==='nuevo:'+x.nota.cab.cama?' selected':''}>Paciente nuevo en cama ${x.nota.cab.cama}</option>`:'';
+  return `<tr><td>${d}</td><td class="note">${esc(x.motivo||'')}</td><td><select onchange="lRes.porAsociar[${i}].asig=this.value"><option value="">— no usar —</option>${nuevo}${act.map(p=>`<option value="${p.id}"${(x.asig||x.sug)===p.id?' selected':''}>${p.cama} · ${esc(p.nombre)}</option>`).join('')}</select></td></tr>`}).join('')}</table></div>`}
+ if(R.errores.length)h+=`<div class="sec"><div class="st" style="background:var(--rd)">NO SE PUDIERON LEER (el resto sigue normal)</div>${R.errores.map(e=>`<div class="note">✕ ${esc(e.fuente)}: ${esc(e.error)}</div>`).join('')}</div>`;
+ h+=`<div class="row" style="margin-top:6px"><button class="btn gr" onclick="lAplicar()">Guardar en fichas y dejar prepicadas</button><button class="btn sec" onclick="lInforme()">Informe de lectura (enmascarado)</button></div>`;
+ $('lres').innerHTML=h}
+// aplica lo cargado: notas importadas al historial, exámenes, nota de hoy prepicada con novedades
+function lAplicar(){const R=lRes;if(!R)return;const hoy=todayISO();
+ R.porAsociar.forEach(x=>{const v=x.asig!==undefined?x.asig:(x.sug||'');if(!v)return;let pid=v;
+  if(v.startsWith('nuevo:')){const cama=v.slice(6);if(DB.beds[cama])return;const cab=x.nota.cab||{};const p={id:uid(),notes:[],labs:[],upd:Date.now(),nombre:LT.iniciales(cab.nombre||'')||'Paciente',sexo:'m',fingreso:x.nota.fecha||hoy,falta:null,activo:true,cama};DB.patients[p.id]=p;DB.beds[cama]=p.id;pid=p.id}
+  const s=R.pac[pid]=R.pac[pid]||{notas:[],labs:[],hojas:[],fuentes:new Set()};
+  if(x.tipo==='nota'){s.notas.push(x.nota);s.fuentes.add(x.nota.fuente)}else if(x.tipo==='lab'){s.labs.push(x.lab);s.fuentes.add(x.fuente)}else if(x.tipo==='hoja'){s.hojas.push(x.hoja);s.fuentes.add(x.fuente)}x.hecho=true});
+ R.porAsociar=R.porAsociar.filter(x=>!x.hecho);
+ Object.entries(R.pac).forEach(([pid,s])=>{if(s.aplicado)return;try{lAplicarPaciente(pid,s,hoy);s.aplicado=true}catch(e){s.estado='Error: '+(e.message||e);R.errores.push({fuente:(DB.patients[pid]||{}).cama||pid,error:e.message||String(e)})}});
+ saveDB();lRenderRes();renderCamas&&renderCamas()}
+function aprenderHuellas(p,cab){if(!cab)return;p.hue=p.hue||{r:[],t:[]};const r=cab.run&&LT.huellaRut(cab.run);if(r&&!p.hue.r.includes(r))p.hue.r.push(r);
+ if(cab.nombre)LT.huellaTokens(cab.nombre).forEach(t=>{if(!p.hue.t.includes(t))p.hue.t.push(t)});if(p.hue.t.length>24)p.hue.t=p.hue.t.slice(-24)}
+function lAplicarPaciente(pid,s,hoy){const p=DB.patients[pid];if(!p)throw new Error('paciente no encontrado');
+ s.notas.forEach(n=>aprenderHuellas(p,n.cab));
+ // historial: cada nota importada queda guardada
+ s.notas.forEach(n=>{const k=LT.sha256(n.texto).slice(0,16);if(!p.notes.some(x=>x.tipo==='imp'&&x.hash===k))p.notes.push({fecha:n.fecha||hoy,hora:n.hora||'',tipo:'imp',texto:n.texto,fuente:n.fuente,hash:k,upd:Date.now()})});
+ s.labs.forEach(r=>addLab(p,r));if(s.hojas.length)fotoPend[pid]=s.hojas[s.hojas.length-1];
+ p.notes.sort((a,b)=>a.fecha<b.fecha?-1:a.fecha>b.fecha?1:0);
+ if(!s.notas.length){s.estado=s.labs.length?'Exámenes guardados':'Foto lista para revisar en la hoja';p.upd=Date.now();return}
+ const res=LT.combinar(s.notas,{hoy,sexo:p.sexo,reglas:DB.reglas||[],dxActual:p.dx||''},separar);
+ let n=p.notes.find(x=>x.fecha===hoy&&x.tipo==='evo');const items=res.items.map(it=>({...it,id:uid(),estado:it.descartar?'desc':'incl',orig0:it.txt}));
+ if(n&&n.state&&n.texto){n.imp=(n.imp||[]).concat(items.filter(it=>!(n.imp||[]).some(o=>o.txt===it.txt)));s.estado='Ya tenía evolución de hoy: se agregaron novedades';p.upd=Date.now();return}
+ const prev=[...p.notes].reverse().find(x=>x.state&&x.fecha<hoy&&x.tipo!=='imp');const ch=[];let st;
+ const baseNueva=res.base&&(!prev||res.base.fecha>=prev.fecha);
+ if(prev){st=JSON.parse(JSON.stringify(prev.state));Object.keys(st).forEach(k=>{if(isDaily(k))delete st[k]});if(prev.final){st.dx=prev.final.dx;st.pp=prev.final.pp;st.ind=prev.final.ind}['anam','am','i_cat','i_dx','i_det'].forEach(k=>delete st[k]);
+  st.cop_json=JSON.stringify({on:1,ok:[]})}
+ else st={ci_sindis:1,ci_sinint:1};
+ let desde=prev?prev.fecha:null;
+ if(baseNueva){const sp=res.base.sep;st.dx=sp.dx;st.pp=sp.pp;st.ind=sp.ind;const inf=inferirDesdeNarr(sp.narr);const qd=st.qt_dia;aplicarInferido(st,inf);if(!inf.st.qt_dia&&qd)st.qt_dia=qd;st.arr_narr=inf.resto.map(l=>LT.fechasRelativas(l,res.base.fecha,res.base.hora,hoy)).join('\n');if(prev)st.cop_json=JSON.stringify({on:1,ok:[]});if(sp.ef)st.ef_txt=sp.ef;st.ex_prev=sp.ex;st.ref_prev=res.base.texto;desde=res.base.fecha}
+ else if(st.arr_narr&&desde)st.arr_narr=st.arr_narr.split('\n').map(l=>LT.fechasRelativas(l,desde,null,hoy)).join('\n');
+ const nd=desde?daysBetween(desde,hoy):0;
+ if(nd>0){['dx','pp','ind','i_atb','qt_esq','arr_narr'].forEach(k=>{if(st[k]){const r=incCounters(st[k],nd,k==='ind');st[k]=r.text;ch.push(...r.ch)}});if(st.qt_dia&&/^\d+$/.test(String(st.qt_dia).trim())){ch.push('QT día +'+st.qt_dia+' → +'+(+st.qt_dia+nd));st.qt_dia=String(+st.qt_dia+nd)}}
+ if(!st.qt_dia&&st.dx){const m=st.dx.match(/(?:[Dd][ií]a|QT|D)\s*\+\s*(\d{1,3})/);if(m)st.qt_dia=m[1]}
+ if(prev&&(prev.state.i_ini||prev.state.i_esc))st.i_comp=1;
+ if(st.prem_txt===undefined)st.prem_txt='Clorfenamina 10mg EV\nBetametasona 4mg EV';
+ n=n||{fecha:hoy,tipo:'evo'};n.state=st;n.imp=items;n.cambios=ch;n.origen='lote';n.upd=Date.now();if(!p.notes.includes(n))p.notes.push(n);
+ p.notes.sort((a,b)=>a.fecha<b.fecha?-1:a.fecha>b.fecha?1:0);p.upd=Date.now();
+ const nInc=items.filter(i=>i.estado==='incl').length;s.estado=`Prepicada: ${nInc} novedad(es)${ch.length?', contadores al día':''}`}
+// ═══ leer la narrativa importada: frases estándar → casillas; el resto queda como líneas propias ═══
+const CLIN_KEYS=['c_cuidado','c_critico','c_grave','c_regular','c_beg','c_reserv','c_estable','c_agonico','c_confort','t_est','t_fav','t_desf','tol_bien','tol_irreg','tol_inc','i_prof','i_tbc','i_comp','i_ini','i_esc','i_af','i_av','pp_norm','pp_desc','pp_elev','pp_alza','pp_nd','n_luc','n_vig','n_ori','n_coop','n_tranq','n_animo','n_desor','n_somn','n_delir','s_asint','s_disnea','s_dolor','s_cefalea','s_nauseas','s_vomitos','s_diarrea','s_dabd','s_sang','s_otro','hd_est','hd_dva','hd_trans','hd_taq','hd_arr','r_amb','r_cn','r_mmv','r_cnaf','r_vmni','r_vmi','r_sinap','r_wob','r_taq','r_desat','r_mejor','rn_cons','rn_rec','rn_det','rn_falla','vo_buena','vo_parcial','vo_cero','vo_sne','vo_npt','dp_norm','dp_bland','dp_liq','dp_sin','ci_sindis','ci_sinint'];
+function inferirDesdeNarr(lineas){const st={},resto=[],sdet=[];const n=x=>norm(x).replace(/[.\s]+$/,'').trim();
+ const NEU={luc:'n_luc',vigil:'n_vig',orientad:'n_ori',cooperador:'n_coop',tranquil:'n_tranq','buen animo':'n_animo',desorientad:'n_desor',somnolient:'n_somn'};
+ const parteNeu=p=>{const q=n(p).replace(/temporoespacialmente|te$/,'').trim();const k=Object.keys(NEU).find(w=>q.startsWith(w)||q===w);return k?NEU[k]:null};
+ lineas.forEach(l=>{const fr=String(l).split(/(?<=\.)\s+(?=[A-ZÁÉÍÓÚÑ(])/);const quedan=[];let trasNeu=false;
+  fr.forEach(f=>{const t=n(f);let m;const eraNeu=trasNeu;trasNeu=false;
+   if((m=t.match(/^(paciente\s+)?(de cuidado|en beg|grave|critic[oa]|en condicion regular)$/))){st[{'de cuidado':'c_cuidado','en beg':'c_beg','grave':'c_grave','critico':'c_critico','critica':'c_critico','en condicion regular':'c_regular'}[m[2]]]=1;return}
+   if(/^estacionari[oa]$/.test(t)){st.t_est=1;return}
+   if((m=t.match(/^estacionari[oa][,\s/]+(.+)$/))){st.t_est=1;st.t_det=f.replace(/^\s*estacionari[oa][,\s/]+/i,'').replace(/\.$/,'');return}
+   if(/^(evolucion( global)? favorable|evolucionando favorablemente)$/.test(t)){st.t_fav=1;return}
+   if((m=f.match(/^\s*(?:cursando|en)\s+d[ií]a\s*\+\s*(\d{1,3})\s+de\s+(.+?)(?:,\s*(bien tolerad[oa]|con regular tolerancia|con irregular tolerancia|con incidentes)(?:,\s*sin incidentes)?)?\.?\s*$/i))){st.qt_dia=m[1];st.qt_esq=m[2].trim();if(m[3]){const q=norm(m[3]);if(q.startsWith('bien'))st.tol_bien=1;else if(/regular|irregular/.test(q))st.tol_irreg=1;else st.tol_inc=1}return}
+   if(/^(neutropenic|sin neutropenia|ya sin neutropenia|continua neutropenic|en aplasia)/.test(t)&&t.split(/[,.]/).length<=3&&!/recibiendo|se indica|recibe|neupogen/.test(t))return; // diario: lo deciden los exámenes de hoy
+   if(/^(sin|con) (necesidad|requerimiento)( de soporte)? transfusional/.test(t)||/^hoy \d{1,2}\/\d{1,2} con requerimiento transfusional/.test(t))return; // diario
+   if(/^(afebril|febril)/.test(t)){const ps=f.split(/,\s*/).slice(1);const extra=[];ps.forEach(p=>{const q=n(p);if(/^completando terapia atb( y antifungica)?$/.test(q)){st.i_comp=1;if(/antifung/.test(q))st.i_af=1}else if(/^recibiendo profilaxis (estandar|correspondientes?)$/.test(q))st.i_prof=1;else if(/^recibiendo profilaxis tbc$/.test(q))st.i_tbc=1;else if(q)extra.push(p.trim())});if(extra.length)quedan.push(cap(extra.join(', ')).replace(/\.?$/,'.'));return}
+   if(/^(recibiendo )?profilaxis (estandar|correspondientes?)$/.test(t)){st.i_prof=1;return}
+   if(/^ppii (en descenso|elevados?|normales|al alza)$/.test(t)){st[{'en descenso':'pp_desc','elevados':'pp_elev','elevado':'pp_elev','normales':'pp_norm','al alza':'pp_alza'}[t.slice(5)]]=1;return}
+   {const ps=f.replace(/\.$/,'').split(/,\s*/);const ks=ps.map(parteNeu);if(ks[0]&&ks.filter(Boolean).length>=1&&ks.every(Boolean)){ks.forEach(k=>st[k]=1);trasNeu=true;return}if(ks[0]&&ks.filter(Boolean).length>=2){ks.forEach(k=>{if(k)st[k]=1});sdet.push(cap(ps.filter((p,i)=>!ks[i]).join(', ')));return}}
+   if(/^asintomatic[oa]$|^actualmente asintomatic[oa]$/.test(t)){st.s_asint=1;return}
+   if((m=t.match(/^hemodinamia estable( autosostenida)?,? bien perfundid[oa]$|^hemodinamia estable,? autosostenida\.? bien perfundid[oa]$/))){st.hd_est=1;return}
+   if(/^(taquicardic[oa])$/.test(t)){st.hd_taq=1;return}
+   if((m=t.match(/^intercambio gaseoso conservado,?( con)? fio[₂2] ambiental(,? sin apremio respiratorio)?$/))){st.r_amb=1;if(m[2])st.r_sinap=1;return}
+   if(/^(fx|funcion) renal conservada$/.test(t)){st.rn_cons=1;return}
+   if(/^(fx|funcion) renal conservada/.test(t)&&/diuresis|bh/.test(t)){st.rn_cons=1;return}
+   if(/^diuresis/.test(t)&&/bh/.test(t))return;
+   if(/^buena tolerancia oral$/.test(t)){st.vo_buena=1;return}
+   if(/^deposiciones \(\+\)( normales)?$/.test(t)){st.dp_norm=1;return}
+   if(/^buena tolerancia oral\. deposiciones \(\+\)( normales)?$/.test(t)){st.vo_buena=1;st.dp_norm=1;return}
+   if(/^sin evidencias? de (otras )?disfunciones organicas$/.test(t)){st.ci_sindis=1;return}
+   if(/^sin otras intercurrencias$/.test(t)){st.ci_sinint=1;return}
+   if(eraNeu&&/dolor|cefalea|n[aá]usea|v[oó]mit|disnea|prurito|mareo|astenia|refiere|mantiene|molestia|insomnio|ansiedad/i.test(f)){sdet.push(f.trim().replace(/\.$/,''));trasNeu=true;return}
+   quedan.push(f.trim())});
+  if(quedan.length)resto.push(quedan.join(' '))});
+ return {st,resto,sdet}}
+function aplicarInferido(st,inf){CLIN_KEYS.forEach(k=>delete st[k]);delete st.t_det;Object.assign(st,inf.st);if(inf.sdet.length)st.s_det=inf.sdet.join('. ')}
+// informe enmascarado
+function lInforme(){const R=lRes;if(!R)return;let out=['INFORME DE LECTURA (enmascarado: letras→x, números→9; solo quedan palabras de estructura)',''];
+ R.docs.forEach(d=>{out.push('=== '+LT.enmascarar(d.fuente)+' · '+d.tipo+' ===');if(d.texto){const {L,lab}=clasificarNota(d.texto,{});L.forEach((l,i)=>{if(lab[i]==='blank')return;out.push(('['+lab[i]+']').padEnd(7)+LT.enmascarar(l))})}out.push('')});
+ R.errores.forEach(e=>out.push('ERROR '+LT.enmascarar(e.fuente)+': '+e.error));
+ $('mi-txt').value=out.join('\n');abrir('m-inf')}
+// ═══ HOJA: novedades importadas, pendientes, copiado de ayer, reglas ═══
+const SYS_N={cond:'Condición',qt:'Tratamiento / QT',hem:'Hematológico',est:'Estudios, IC y pendientes',inf:'Infeccioso',neu:'Neurológico',hd:'Hemodinamia',resp:'Respiratorio',ren:'Renal',dig:'Digestivo / VO',otro:'Otros',dx:'Diagnósticos',pp:'Planes',ind:'Indicaciones',lab:'Exámenes',ef:'Examen físico'};
+const SYS_ORD=['cond','qt','hem','est','inf','neu','hd','resp','ren','dig','otro','lab','dx','pp','ind','ef'];
+function impNota(){const n=noteOf(false);return n&&n.imp?n:null}
+function renderImp(){const b=$('imp-panel');if(!b)return;const n=impNota();const pend=pendientesAyer();
+ const it=n?n.imp:[];const vis=it.filter(x=>x.estado!=='desc'&&x.estado!=='apl'),desc=it.filter(x=>x.estado==='desc'),apl=it.filter(x=>x.estado==='apl');
+ if(!vis.length&&!desc.length&&!pend.length&&!apl.length){b.innerHTML='';b.closest('.sec').style.display='none';return}b.closest('.sec').style.display='';
+ let h='';
+ if(pend.length){h+=`<div class="sub">Pendientes de ayer</div>`+pend.map(x=>`<div class="imp-it"><span class="t">${esc(x.linea)}</span><span class="acc"><button class="btn sec sm" onclick="pendAccion(${x.i},'sigue')">Sigue</button><button class="btn sm" onclick="pendAccion(${x.i},'llego')">Llegó</button><button class="btn rd sm" onclick="pendAccion(${x.i},'quitar')">Quitar</button></span></div>`).join('')}
+ if(vis.length){h+=`<div class="sub">Novedades importadas (incluidas en el texto en su lugar; revisa, edita o descarta)</div>`;
+  SYS_ORD.forEach(sy=>{const g=vis.filter(x=>x.sys===sy);if(!g.length)return;h+=`<div class="imp-g">${SYS_N[sy]||sy}</div>`;
+   g.forEach(x=>{const editado=x.txt!==x.orig0;const ap={dx:'Agregar a diagnósticos',pp:'Agregar a planes',ind:'Agregar a indicaciones',lab:'Agregar a exámenes',cond:'Aplicar condición'}[x.sys];
+    h+=`<div class="imp-it ${x.estado==='ok'?'ok':''}"><select onchange="impSet('${x.id}','sys',this.value)">${SYS_ORD.map(k=>`<option value="${k}"${k===x.sys?' selected':''}>${SYS_N[k]}</option>`).join('')}</select>
+     <textarea rows="${Math.min(5,Math.ceil(x.txt.length/95))}" oninput="impSet('${x.id}','txt',this.value,true)">${esc(x.txt)}</textarea>
+     <span class="acc">${ap?`<button class="btn sm" onclick="impAplicar('${x.id}')">${ap}</button>`:`<button class="btn ${x.estado==='ok'?'gr':'sec'} sm" title="Revisada" onclick="impSet('${x.id}','estado','${x.estado==='ok'?'incl':'ok'}')">✓</button>`}<button class="btn rd sm" title="Descartar" onclick="impSet('${x.id}','estado','desc')">✕</button>${editado?`<button class="btn sec sm" onclick="reglaDesde('${x.id}')">Guardar como regla</button>`:''}</span>
+     <div class="note">${esc((x.fuente||'')+(x.fecha?' · '+dm(x.fecha):'')+(x.hora?' '+x.hora:''))}${x.textual?' · textual':''}${x.orig&&x.orig!==x.txt?' · original: «'+esc(x.orig.slice(0,160))+(x.orig.length>160?'…':'')+'»':''}</div></div>`})})}
+ if(desc.length)h+=`<details><summary class="note" style="cursor:pointer">Descartadas automáticamente o por ti (${desc.length})</summary>${desc.map(x=>`<div class="imp-it desc"><span class="t">${esc(x.txt)}</span><span class="note">${esc(x.motivo||'descartada')}</span><button class="btn sec sm" onclick="impSet('${x.id}','estado','incl')">Recuperar</button></div>`).join('')}</details>`;
+ if(apl.length)h+=`<div class="note">Ya aplicadas a diagnósticos / planes / indicaciones / exámenes: ${apl.length}.</div>`;
+ b.innerHTML=h}
+function impFind(id){const n=impNota();return n?n.imp.find(x=>x.id===id):null}
+function impSet(id,k,v,silent){const x=impFind(id);if(!x)return;x[k]=v;if(k==='txt'&&x.estado==='incl')x.estado='incl';const n=impNota();n.upd=Date.now();P().upd=Date.now();saveDB();if(!silent)renderImp();else if(k==='txt'){clearTimeout(window._tImp);window._tImp=setTimeout(renderImp,900)}}
+function impAplicar(id){const x=impFind(id);if(!x)return;const t=x.txt.trim();
+ if(x.sys==='dx')setV('dx',V('dx').replace(/\s+$/,'')+'\n- '+t.replace(/^-\s*/,''));
+ else if(x.sys==='pp')setV('pp',V('pp').replace(/\s+$/,'')+'\n- '+t.replace(/^-\s*/,''));
+ else if(x.sys==='ind')setV('ind_add',(V('ind_add')?V('ind_add')+'\n':'')+t.replace(/^-\s*/,''));
+ else if(x.sys==='lab')setV('ex_prev',(V('ex_prev')?V('ex_prev')+'\n':'')+t);
+ else if(x.sys==='cond'){const m={grave:'c_grave',critic:'c_critico',cuidado:'c_cuidado',beg:'c_beg',reg:'c_regular'};const k=Object.keys(m).find(z=>norm(t).includes(z));if(k){['c_cuidado','c_critico','c_grave','c_regular','c_beg'].forEach(c=>setC(c,false));setC(m[k],true)}}
+ x.estado='apl';saveDraft();renderImp()}
+function reglaDesde(id){const x=impFind(id);if(!x)return;const de=prompt('Cuando aparezca este texto (puedes acortarlo a la parte que se repite):',x.orig0);if(de==null||!de.trim())return;
+ const a=prompt('Escribe en su lugar (vacío = descartar la frase):',x.txt);if(a==null)return;DB.reglas=DB.reglas||[];DB.reglas.push({id:uid(),de:de.trim(),a:a.trim(),creada:todayISO()});saveDB();renderReglas&&renderReglas();alert('Regla guardada. Se aplicará en las próximas cargas.')}
+function renderReglas(){const b=$('reglas');if(!b)return;const R=DB.reglas||[];b.innerHTML=R.length?R.map((r,i)=>`<div class="imp-it"><span class="t"><b>«${esc(r.de)}»</b> → ${r.a?'«'+esc(r.a)+'»':'<i>descartar frase</i>'}</span><button class="btn rd sm" onclick="DB.reglas.splice(${i},1);saveDB();renderReglas()">Borrar</button></div>`).join(''):'<div class="note">Aún no hay reglas. Se crean al corregir una novedad importada y tocar "Guardar como regla".</div>'}
+function pendientesAyer(){const t=V('arr_narr');if(!t)return [];const n=noteOf(false),ok=(n&&n.pendOk)||[];return t.split('\n').map((l,i)=>({linea:l.trim(),i})).filter(x=>/^\(p\)|\(p\)\s*$|\bpendiente/i.test(x.linea)&&!ok.includes(x.linea))}
+function pendAccion(i,acc){const L=V('arr_narr').split('\n');const l=(L[i]||'').trim();if(!l)return;
+ if(acc==='quitar')L.splice(i,1);
+ else if(acc==='llego'){const r=prompt('Resultado de: '+l.replace(/^\(p\)\s*/i,'')+'\n(escribe o pega el informe)');if(r==null)return;const que=l.replace(/^\(p\)\s*/i,'').replace(/^(resultados?\s+de\s+)/i,'').replace(/\.$/,'');L[i]=`Se recupera resultado de ${que}: «${r.trim().replace(/\.$/,'')}».`}
+ else if(acc==='sigue'){saveDraft();const n=noteOf(true);n.pendOk=(n.pendOk||[]).concat(l);saveDB();renderImp();return}
+ setV('arr_narr',L.join('\n'));schedSave();renderImp()}
+function arrPorSis(){const M={};(V('arr_narr')||'').split('\n').map(x=>x.trim()).filter(Boolean).forEach(l=>{const sy=/^\(p\)|^evaluad|^en seguimiento|^se recupera|^se solicita|^estudio|^pendiente/i.test(l)?'est':LT.sistemaDe(l);(M[sy]=M[sy]||[]).push(dot(l))});return M}
+function impLineas(sy){const A=(cur._arr||{})[sy]||[];const n=impNota();if(!n)return A;return A.concat(n.imp.filter(x=>x.sys===sy&&(x.estado==='incl'||x.estado==='ok')&&x.txt.trim()).map(x=>dot(x.txt.trim())))}
+// copiado de ayer: secciones clínicas marcadas hasta que se toquen o se confirmen
+const SEC_CLIN=['CONDICIÓN','TRATAMIENTO','HEMATOLÓGICO','INFECCIOSO','NEUROLÓGICO','HEMODINAMIA','RESPIRATORIO','RENAL','CIERRE'];
+function secNombre(s){if(s.dataset.nm)return s.dataset.nm;const st=s.querySelector('.st');const t=((st&&st.firstChild&&st.firstChild.textContent)||'').replace(/^[\d\s·]+/,'').trim();return s.dataset.nm=t.split(/\s/)[0]}
+function copEstado(){try{return JSON.parse(V('cop_json')||'{}')}catch(e){return {}}}
+function paintCopiado(){const c=copEstado();document.querySelectorAll('#sheet div.sec').forEach(s=>{const nm=secNombre(s);const marcar=c.on&&SEC_CLIN.includes(nm)&&!(c.ok||[]).includes(nm)&&[...s.querySelectorAll('input[type=checkbox][data-k]')].some(i=>i.checked&&!isDaily(i.dataset.k));
+ s.classList.toggle('cop',!!marcar);let bd=s.querySelector('.copbadge');if(marcar&&!bd){bd=document.createElement('span');bd.className='copbadge';bd.innerHTML='copiado de ayer · <a href="#" onclick="copConfirmar(\''+nm+'\');return false">confirmar</a>';s.querySelector('.st').appendChild(bd)}else if(!marcar&&bd)bd.remove()});
+ const pend=SEC_CLIN.filter(nm=>c.on&&!(c.ok||[]).includes(nm)&&[...document.querySelectorAll('#sheet div.sec.cop')].some(s=>secNombre(s)===nm));
+ const bt=$('copall');if(bt)bt.style.display=pend.length?'':'none'}
+function copConfirmar(nm){const c=copEstado();if(!c.on)return;c.ok=c.ok||[];if(nm==='*')c.ok=SEC_CLIN.slice();else if(!c.ok.includes(nm))c.ok.push(nm);setV('cop_json',JSON.stringify(c));paintCopiado();schedSave()}
+function copPorConfirmar(){const c=copEstado();if(!c.on)return [];return [...document.querySelectorAll('#sheet div.sec.cop')].map(secNombre)}
+
 if(location.protocol.startsWith('http')&&'serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
 if(navigator.storage&&navigator.storage.persist)navigator.storage.persist().catch(()=>{});
 </script>

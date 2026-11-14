@@ -1,9 +1,9 @@
 // Hemato HGGB · service worker · cambiar VERSION en cada actualización de la app.
 // Los archivos del lector de fotos (carpeta ocr/) van en su propio caché y se descargan una sola vez;
 // cambiar OCR_CACHE solo si cambian los modelos o el motor.
-const VERSION='hemato-v17';
+const VERSION='hemato-v18';
 const OCR_CACHE='hemato-ocr-1';
-const FILES=['./','./index.html','./manifest.webmanifest','./icon-192.png','./icon-512.png','./ocr/hoja.js'];
+const FILES=['./','./index.html','./manifest.webmanifest','./icon-192.png','./icon-512.png','./ocr/hoja.js','./lote.js'];
 self.addEventListener('install',e=>{e.waitUntil(caches.open(VERSION).then(c=>c.addAll(FILES)));self.skipWaiting()});
 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==VERSION&&x!==OCR_CACHE).map(x=>caches.delete(x)))));self.clients.claim()});
 // Aislamiento entre orígenes: permite que el lector use varios núcleos del dispositivo.

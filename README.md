@@ -7,6 +7,7 @@ Los datos de pacientes quedan solo en cada dispositivo (almacenamiento del naveg
 
 Archivos:
 - `index.html`: la app.
+- `lote.js`: carga en lote (partir notas, huellas cifradas de nombre y RUT, combinar el día, novedades por sistema, reglas aprendidas, informe enmascarado). Sin IA: solo reglas.
 - `sw.js`: funcionamiento sin internet. Cambiar `VERSION` en cada actualización.
 - `manifest.webmanifest` e íconos: instalación en pantalla de inicio.
 
