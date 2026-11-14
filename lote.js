@@ -267,9 +267,83 @@ function asociar(doc,pacientes){const hr=doc.run?huellaRut(doc.run):null,ht=doc.
    return {pid:p.id,motivo:'misma cama, iniciales distintas',seguro:false}}}
  if(doc.nombre){const c=pacientes.filter(p=>inicialesCompat(doc.nombre,p.nombre));if(c.length===1)return {pid:c[0].id,motivo:'iniciales',seguro:false}}
  return {pid:null,motivo:'sin coincidencia',seguro:false}}
+
+// ───────── Excel (.xlsx) sin librerías: zip + XML ─────────
+async function unzip(buf){const u=new Uint8Array(buf),dv=new DataView(u.buffer,u.byteOffset,u.byteLength);let e=-1;
+ for(let i=u.length-22;i>=Math.max(0,u.length-70000);i--){if(dv.getUint32(i,true)===0x06054b50){e=i;break}}if(e<0)throw new Error('no es un archivo .xlsx válido');
+ const n=dv.getUint16(e+10,true);let p=dv.getUint32(e+16,true);const out={};
+ for(let k=0;k<n;k++){if(dv.getUint32(p,true)!==0x02014b50)break;const met=dv.getUint16(p+10,true),csz=dv.getUint32(p+20,true),nl=dv.getUint16(p+28,true),xl=dv.getUint16(p+30,true),cl=dv.getUint16(p+32,true),off=dv.getUint32(p+42,true);
+  const nombre=new TextDecoder().decode(u.subarray(p+46,p+46+nl));p+=46+nl+xl+cl;
+  const lnl=dv.getUint16(off+26,true),lxl=dv.getUint16(off+28,true),d0=off+30+lnl+lxl;const data=u.subarray(d0,d0+csz);
+  out[nombre]={met,data}}
+ return {async leer(nombre){const f=out[nombre];if(!f)return null;if(f.met===0)return new TextDecoder().decode(f.data);
+  const ds=new DecompressionStream('deflate-raw');const r=new Blob([f.data]).stream().pipeThrough(ds);return await new Response(r).text()},nombres:Object.keys(out)}}
+function xmlTxt(s){return String(s).replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&apos;/g,"'").replace(/&#(\d+);/g,(m,n)=>String.fromCharCode(+n)).replace(/&#x([0-9a-f]+);/gi,(m,n)=>String.fromCharCode(parseInt(n,16))).replace(/&amp;/g,'&')}
+function textoSi(x){const t=[];x.replace(/<t(?:\s[^>]*)?>([\s\S]*?)<\/t>/g,(m,v)=>{t.push(xmlTxt(v))});return t.join('')}
+function colIdx(ref){const m=ref.match(/^([A-Z]+)/);let n=0;for(const c of m[1])n=n*26+(c.charCodeAt(0)-64);return n-1}
+async function xlsxHojas(buf){const z=await unzip(buf);const wb=await z.leer('xl/workbook.xml');if(!wb)throw new Error('no es un Excel (.xlsx)');
+ const rels=(await z.leer('xl/_rels/workbook.xml.rels'))||'';const R={};rels.replace(/<Relationship\b[^>]*>/g,m=>{const id=(m.match(/Id="([^"]+)"/)||[])[1],t=(m.match(/Target="([^"]+)"/)||[])[1];if(id&&t)R[id]=t.replace(/^\/?xl\//,'').replace(/^\//,'')});
+ const ssx=(await z.leer('xl/sharedStrings.xml'))||'';const SS=[];ssx.replace(/<si>([\s\S]*?)<\/si>/g,(m,x)=>{SS.push(textoSi(x))});
+ const hojas=[];const re=/<sheet\b[^>]*>/g;let m;
+ while((m=re.exec(wb))){const nombre=xmlTxt((m[0].match(/name="([^"]*)"/)||[])[1]||'');const rid=(m[0].match(/r:id="([^"]+)"/)||m[0].match(/\bid="([^"]+)"/)||[])[1];
+  const ruta='xl/'+(R[rid]||'');const x=await z.leer(ruta);if(!x)continue;const filas=[];
+  x.replace(/<row\b[^>]*?(?:\/>|>([\s\S]*?)<\/row>)/g,(rm,inner,o)=>{const rr=+((rm.match(/\br="(\d+)"/)||[])[1]||filas.length+1)-1;const fila=[];
+   (inner||'').replace(/<c\b([^>]*?)(?:\/>|>([\s\S]*?)<\/c>)/g,(cm,at,ci)=>{const ref=(at.match(/\br="([A-Z]+\d+)"/)||[])[1];if(!ref)return;const t=(at.match(/\bt="([^"]+)"/)||[])[1];let v='';
+    if(t==='s'){const k=+((ci||'').match(/<v>([\s\S]*?)<\/v>/)||[])[1];v=SS[k]||''}else if(t==='inlineStr'){v=textoSi(ci||'')}else{const vv=((ci||'').match(/<v>([\s\S]*?)<\/v>/)||[])[1];v=vv!=null?xmlTxt(vv):''}
+    fila[colIdx(ref)]=v});filas[rr]=fila});
+  hojas.push({nombre,filas:Array.from(filas,f=>f||[])})}
+ return hojas}
+function serialAFecha(n){const d=new Date(Date.UTC(1899,11,30)+Math.round(+n)*86400000);return d.getUTCFullYear()+'-'+pad(d.getUTCMonth()+1)+'-'+pad(d.getUTCDate())}
+function celdaFecha(v,anioRef){if(v==null||v==='')return null;if(/^\d{4,5}(\.\d+)?$/.test(String(v).trim())&&+v>20000&&+v<80000)return serialAFecha(v);return fechaDe(v,anioRef)}
+function hojaFecha(nombre,hoy){const y=+(hoy||iso(new Date())).slice(0,4);const f=fechaDe(String(nombre).replace(/[_ ]/g,'-'),y);if(!f)return null;
+ // sin año: si queda en el futuro, era del año anterior
+ if(!/\d{1,2}[\/.\-]\d{1,2}[\/.\-]\d{2,4}/.test(nombre)&&hoy&&diasEntre(hoy,f)>30)return (y-1)+f.slice(4);return f}
+function hojaDelDia(hojas,hoy){const c=hojas.map((h,i)=>({i,f:hojaFecha(h.nombre,hoy)})).filter(x=>x.f&&x.f<=hoy).sort((a,b)=>a.f<b.f?1:-1);return c.length?c[0].i:hojas.length-1}
+// ───────── bloques de la entrega de turno ─────────
+const ENT_CAMPOS=[[/^sala/,'cama'],[/^nombre/,'nombre'],[/^ru[nt]\b/,'run'],[/^edad/,'edad'],[/^fn\b|^fecha de nac|^f\.?\s*nac/,'fn'],[/^ficha/,'ficha'],[/^domicilio/,'domicilio'],[/^f\.?\s*ingreso|^fecha (de )?ingreso/,'fingreso'],[/inicio.*quimio|inicio.*qt/,'fqt'],[/^dia.*quimio|^dia.*qt|^d[ií]a qt/,'diaqt']];
+const ENT_FILAS=[[/^antecedentes/,'ANTECEDENTES'],[/^diagnosticos?/,'DIAGNOSTICOS'],[/^tratamiento/,'TRATAMIENTO'],[/^examenes/,'EXAMENES'],[/^planes?/,'PLANES'],[/^comentarios?/,'COMENTARIOS'],[/^pendientes?/,'PENDIENTES'],[/^transfusiones?/,'TRANSFUSIONES']];
+function entregaBloques(filas,hoy){const B=[];const y=+(hoy||iso(new Date())).slice(0,4);let cur=null;
+ for(let r=0;r<filas.length;r++){const f=filas[r]||[];const ix=f.findIndex(c=>/^\s*sala\s*:?\s*$/i.test(c||''));
+  if(ix>=0&&f.some(c=>/^\s*nombre\s*$/i.test(c||''))){const cols={};f.forEach((c,i)=>{const t=nrm(c).trim();const k=(ENT_CAMPOS.find(([re])=>re.test(t))||[])[1];if(k&&!(k in cols))cols[k]=i});
+   const v=filas[r+1]||[];cur={fila:r+1,cama:null,campos:{},atb:[],atbTexto:'',extra:[]};B.push(cur);
+   for(const k in cols){const val=v[cols[k]];if(val==null||String(val).trim()==='')continue;cur[k]=String(val).trim()}
+   if(cur.cama){const m=cur.cama.match(/(\d{1,2})\s*[-–.\/ ]\s*(\d)/);cur.cama=m?(+m[1])+'-'+m[2]:cur.cama}
+   cur.fingreso=celdaFecha(cur.fingreso,y);cur.fqt=celdaFecha(cur.fqt,y);if(cur.diaqt!=null){const d=String(cur.diaqt).match(/-?\d+/);cur.diaqt=d?+d[0]:null}
+   r++;continue}
+  if(!cur)continue;
+  const li=f.findIndex(c=>c&&ENT_FILAS.some(([re])=>re.test(nrm(c).trim())));
+  f.forEach((c,i)=>{if(c&&/^\s*atb\s*:/i.test(c)){cur.atbTexto=String(c).trim();cur.atb=leerATB(c)}});
+  if(li<0)continue;const lab=ENT_FILAS.find(([re])=>re.test(nrm(f[li]).trim()))[1];
+  const val=f.slice(li+1).filter(c=>c!=null&&String(c).trim()!=='').join('\n').trim();
+  f.slice(0,li).forEach(c=>{if(c&&String(c).trim()&&!/^\s*atb\s*:/i.test(c))cur.extra.push(String(c).trim())});
+  if(val)cur.campos[lab]=(cur.campos[lab]?cur.campos[lab]+'\n':'')+val}
+ return B}
+function leerATB(t){const s=String(t).replace(/^\s*atb\s*:\s*/i,'').trim();if(!s||/^no\b|^sin\b|^-$/i.test(s))return [];const out=[];
+ s.split(/[,;+\n]|\s+y\s+/).forEach(p=>{const m=p.match(/([A-Za-zÁÉÍÓÚáéíóúñÑ\-\/ ]{3,}?)\s*\(\s*(\d{1,2})\s*\/\s*(\d{1,2})\s*\)/);if(m)out.push({farmaco:m[1].trim(),a:+m[2],b:+m[3]});else if(p.trim())out.push({farmaco:p.trim(),a:null,b:null})});return out}
+function lineasCelda(t){return String(t||'').split(/\n|;\s*|(?<=\.)\s+(?=[A-ZÁÉÍÓÚÑ])/).map(x=>x.replace(/^\s*[-•*\d]+[.)-]?\s+/,'').trim()).filter(Boolean)}
+function yaEsta(txt,ref){if(!ref)return false;const R=nrm(ref);const tk=nrm(txt).replace(/[^a-z0-9 ]/g,' ').split(/\s+/).filter(x=>x.length>3);if(!tk.length)return R.includes(nrm(txt).trim());return tk.filter(x=>R.includes(x)).length/tk.length>=0.6}
+// ctx: {hoy, fechaHoja, sexo, reglas, dx, pp, ind, arr, qtDia, qtEsq, cama, fingreso}
+function entregaItems(b,ctx){const hoy=ctx.hoy,fh=ctx.fechaHoja||addDays(hoy,-1),delta=Math.max(0,diasEntre(fh,hoy));const fuente='Entrega '+dm(fh);const it=[];
+ const aviso=t=>it.push({sys:'aviso',tipo:'aviso',txt:t,fuente,fecha:fh});
+ if(b.cama&&ctx.cama&&b.cama!==ctx.cama)aviso(`La entrega la ubica en cama ${b.cama}; en la app está en ${ctx.cama}.`);
+ if(b.fingreso&&ctx.fingreso&&b.fingreso!==ctx.fingreso)aviso(`Fecha de ingreso en la entrega ${dm(b.fingreso)}; en la app ${dm(ctx.fingreso)}.`);
+ if(b.diaqt!=null){const dq=b.diaqt+delta;if(ctx.qtDia!=null&&ctx.qtDia!==''&&+ctx.qtDia!==dq)aviso(`Día de QT: según la entrega hoy sería +${dq}${b.fqt?' (inicio '+dm(b.fqt)+')':''}; en la app +${ctx.qtDia}.`);else if(ctx.qtDia==null||ctx.qtDia==='')it.push({sys:'qt',tipo:'qtdia',txt:`Día +${dq} de QT según la entrega${b.fqt?' (inicio '+dm(b.fqt)+')':''}.`,valor:dq,fuente,fecha:fh,estado0:'prop'})}
+ const ind=ctx.ind||'';
+ b.atb.forEach(x=>{if(x.a==null)return;const a2=Math.min(x.a+delta,x.b);const L=ind.split('\n').find(l=>nrm(l).includes(nrm(x.farmaco).split(' ')[0]));
+  if(!L){aviso(`La entrega lista ${x.farmaco} (${a2}/${x.b}), que no está en las indicaciones.`);return}
+  const n=(L.match(/\((\d{1,2})\)\s*$/)||[])[1];if(n&&+n!==a2)aviso(`${x.farmaco}: según la entrega hoy sería (${a2}/${x.b}); en indicaciones (${n}).`)});
+ lineasCelda(b.campos.DIAGNOSTICOS).forEach(l=>{if(!yaEsta(l,ctx.dx))it.push({sys:'dx',tipo:'dx',txt:dot(cap(normAbrev(l))),fuente,fecha:fh})});
+ if(b.campos.TRATAMIENTO&&!yaEsta(b.campos.TRATAMIENTO,(ctx.qtEsq||'')+' '+(ctx.dx||'')))aviso(`Tratamiento según la entrega: «${b.campos.TRATAMIENTO.replace(/\n/g,' · ')}».`);
+ if(b.campos.EXAMENES)it.push({sys:'lab',tipo:'lab',txt:/^\s*\d{1,2}[\/.]\d{1,2}/.test(b.campos.EXAMENES)?`Según entrega: ${b.campos.EXAMENES.replace(/\n/g,' · ')}`:`Según entrega ${dm(fh)}: ${b.campos.EXAMENES.replace(/\n/g,' · ')}`,fuente,fecha:fh,estado0:'prop'});
+ lineasCelda(b.campos.PLANES).forEach(l=>{if(!yaEsta(l,ctx.pp))it.push({sys:'pp',tipo:'pp',txt:dot(cap(normAbrev(fechasRelativas(l,fh>=hoy?addDays(hoy,-1):fh,null,hoy)))),fuente,fecha:fh})});
+ const fRef=fh>=hoy?addDays(hoy,-1):fh;
+ if(b.campos.COMENTARIOS){const nota={texto:b.campos.COMENTARIOS,fecha:fRef,hora:null,sinFecha:diasEntre(fRef,hoy)===1,fuente};extraerNovedades(nota,{hoy,sexo:ctx.sexo,reglas:ctx.reglas}).forEach(x=>{x.fuente=fuente;it.push(x)})}
+ lineasCelda(b.campos.PENDIENTES).forEach(l=>{const c=normAbrev(fechasRelativas(l.replace(/^\(p\)\s*/i,'').replace(/^pendientes?\s*:?\s*/i,''),fh>=hoy?addDays(hoy,-1):fh,null,hoy));if(yaEsta(c,ctx.arr))return;it.push({sys:'est',tipo:'pend',txt:dot('(P) '+cap(c)),fuente,fecha:fh,clave:claveExamen(c)})});
+ if(b.campos.TRANSFUSIONES&&!/^(no|sin|-|estandar)$/i.test(b.campos.TRANSFUSIONES.trim()))it.push({sys:'hem',tipo:'tx',txt:`Transfusiones según entrega: ${b.campos.TRANSFUSIONES.replace(/\n/g,' · ')}.`.replace(/\.\.$/,'.'),fuente,fecha:fh,estado0:'prop'});
+ return depurar(it.map(x=>({...x,orig:x.orig||x.txt})))}
 // ───────── informe enmascarado ─────────
 const ESTRUCTURA=new Set(['evolucion','medica','fecha','hora','cama','sala','paciente','run','rut','diagnosticos','diagnostico','planes','plan','problemas','y','indicaciones','reposo','regimen','examen','fisico','examenes','imagenes','comentario','cmr','hematologia','pendiente','pendientes','servicio','unidad','medico','profesional','emision','pagina','documento','registro','clinico','electronico','al','de','del','la','el','en','por','con','sin','oxigeno','control','residente','sos','adicionales','evolucion','o','hospital','nombre','social','edad','ficha','ingreso','alta','firma','hoy','ayer','anoche','afebril','neutropenico','neutropenica']);
 function enmascarar(linea){return String(linea).split(/(\s+)/).map(w=>{if(/^\s+$/.test(w))return w;const base=nrm(w).replace(/[^a-z]/g,'');if(base&&ESTRUCTURA.has(base))return w;return w.replace(/[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]/g,c=>c===c.toUpperCase()?'X':'x').replace(/\d/g,'9')}).join('')}
-const api={cabecera,partirNotas,frases,reescribir,extraerNovedades,depurar,combinar,asociar,huellaTokens,huellaRut,iniciales,inicialesCompat,fechasRelativas,rel,addDays,diasEntre,aplicarReglas,enmascarar,sistemaDe,normAbrev,sha256,esCompleta};
+const api={xlsxHojas,hojaFecha,hojaDelDia,entregaBloques,entregaItems,leerATB,similares,yaEsta,cabecera,partirNotas,frases,reescribir,extraerNovedades,depurar,combinar,asociar,huellaTokens,huellaRut,iniciales,inicialesCompat,fechasRelativas,rel,addDays,diasEntre,aplicarReglas,enmascarar,sistemaDe,normAbrev,sha256,esCompleta};
 root.HematoLote=api;if(typeof module!=='undefined')module.exports=api;
 })(typeof window!=='undefined'?window:globalThis);

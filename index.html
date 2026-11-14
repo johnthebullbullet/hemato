@@ -393,15 +393,89 @@ function asociar(doc,pacientes){const hr=doc.run?huellaRut(doc.run):null,ht=doc.
    return {pid:p.id,motivo:'misma cama, iniciales distintas',seguro:false}}}
  if(doc.nombre){const c=pacientes.filter(p=>inicialesCompat(doc.nombre,p.nombre));if(c.length===1)return {pid:c[0].id,motivo:'iniciales',seguro:false}}
  return {pid:null,motivo:'sin coincidencia',seguro:false}}
+
+// ───────── Excel (.xlsx) sin librerías: zip + XML ─────────
+async function unzip(buf){const u=new Uint8Array(buf),dv=new DataView(u.buffer,u.byteOffset,u.byteLength);let e=-1;
+ for(let i=u.length-22;i>=Math.max(0,u.length-70000);i--){if(dv.getUint32(i,true)===0x06054b50){e=i;break}}if(e<0)throw new Error('no es un archivo .xlsx válido');
+ const n=dv.getUint16(e+10,true);let p=dv.getUint32(e+16,true);const out={};
+ for(let k=0;k<n;k++){if(dv.getUint32(p,true)!==0x02014b50)break;const met=dv.getUint16(p+10,true),csz=dv.getUint32(p+20,true),nl=dv.getUint16(p+28,true),xl=dv.getUint16(p+30,true),cl=dv.getUint16(p+32,true),off=dv.getUint32(p+42,true);
+  const nombre=new TextDecoder().decode(u.subarray(p+46,p+46+nl));p+=46+nl+xl+cl;
+  const lnl=dv.getUint16(off+26,true),lxl=dv.getUint16(off+28,true),d0=off+30+lnl+lxl;const data=u.subarray(d0,d0+csz);
+  out[nombre]={met,data}}
+ return {async leer(nombre){const f=out[nombre];if(!f)return null;if(f.met===0)return new TextDecoder().decode(f.data);
+  const ds=new DecompressionStream('deflate-raw');const r=new Blob([f.data]).stream().pipeThrough(ds);return await new Response(r).text()},nombres:Object.keys(out)}}
+function xmlTxt(s){return String(s).replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&apos;/g,"'").replace(/&#(\d+);/g,(m,n)=>String.fromCharCode(+n)).replace(/&#x([0-9a-f]+);/gi,(m,n)=>String.fromCharCode(parseInt(n,16))).replace(/&amp;/g,'&')}
+function textoSi(x){const t=[];x.replace(/<t(?:\s[^>]*)?>([\s\S]*?)<\/t>/g,(m,v)=>{t.push(xmlTxt(v))});return t.join('')}
+function colIdx(ref){const m=ref.match(/^([A-Z]+)/);let n=0;for(const c of m[1])n=n*26+(c.charCodeAt(0)-64);return n-1}
+async function xlsxHojas(buf){const z=await unzip(buf);const wb=await z.leer('xl/workbook.xml');if(!wb)throw new Error('no es un Excel (.xlsx)');
+ const rels=(await z.leer('xl/_rels/workbook.xml.rels'))||'';const R={};rels.replace(/<Relationship\b[^>]*>/g,m=>{const id=(m.match(/Id="([^"]+)"/)||[])[1],t=(m.match(/Target="([^"]+)"/)||[])[1];if(id&&t)R[id]=t.replace(/^\/?xl\//,'').replace(/^\//,'')});
+ const ssx=(await z.leer('xl/sharedStrings.xml'))||'';const SS=[];ssx.replace(/<si>([\s\S]*?)<\/si>/g,(m,x)=>{SS.push(textoSi(x))});
+ const hojas=[];const re=/<sheet\b[^>]*>/g;let m;
+ while((m=re.exec(wb))){const nombre=xmlTxt((m[0].match(/name="([^"]*)"/)||[])[1]||'');const rid=(m[0].match(/r:id="([^"]+)"/)||m[0].match(/\bid="([^"]+)"/)||[])[1];
+  const ruta='xl/'+(R[rid]||'');const x=await z.leer(ruta);if(!x)continue;const filas=[];
+  x.replace(/<row\b[^>]*?(?:\/>|>([\s\S]*?)<\/row>)/g,(rm,inner,o)=>{const rr=+((rm.match(/\br="(\d+)"/)||[])[1]||filas.length+1)-1;const fila=[];
+   (inner||'').replace(/<c\b([^>]*?)(?:\/>|>([\s\S]*?)<\/c>)/g,(cm,at,ci)=>{const ref=(at.match(/\br="([A-Z]+\d+)"/)||[])[1];if(!ref)return;const t=(at.match(/\bt="([^"]+)"/)||[])[1];let v='';
+    if(t==='s'){const k=+((ci||'').match(/<v>([\s\S]*?)<\/v>/)||[])[1];v=SS[k]||''}else if(t==='inlineStr'){v=textoSi(ci||'')}else{const vv=((ci||'').match(/<v>([\s\S]*?)<\/v>/)||[])[1];v=vv!=null?xmlTxt(vv):''}
+    fila[colIdx(ref)]=v});filas[rr]=fila});
+  hojas.push({nombre,filas:Array.from(filas,f=>f||[])})}
+ return hojas}
+function serialAFecha(n){const d=new Date(Date.UTC(1899,11,30)+Math.round(+n)*86400000);return d.getUTCFullYear()+'-'+pad(d.getUTCMonth()+1)+'-'+pad(d.getUTCDate())}
+function celdaFecha(v,anioRef){if(v==null||v==='')return null;if(/^\d{4,5}(\.\d+)?$/.test(String(v).trim())&&+v>20000&&+v<80000)return serialAFecha(v);return fechaDe(v,anioRef)}
+function hojaFecha(nombre,hoy){const y=+(hoy||iso(new Date())).slice(0,4);const f=fechaDe(String(nombre).replace(/[_ ]/g,'-'),y);if(!f)return null;
+ // sin año: si queda en el futuro, era del año anterior
+ if(!/\d{1,2}[\/.\-]\d{1,2}[\/.\-]\d{2,4}/.test(nombre)&&hoy&&diasEntre(hoy,f)>30)return (y-1)+f.slice(4);return f}
+function hojaDelDia(hojas,hoy){const c=hojas.map((h,i)=>({i,f:hojaFecha(h.nombre,hoy)})).filter(x=>x.f&&x.f<=hoy).sort((a,b)=>a.f<b.f?1:-1);return c.length?c[0].i:hojas.length-1}
+// ───────── bloques de la entrega de turno ─────────
+const ENT_CAMPOS=[[/^sala/,'cama'],[/^nombre/,'nombre'],[/^ru[nt]\b/,'run'],[/^edad/,'edad'],[/^fn\b|^fecha de nac|^f\.?\s*nac/,'fn'],[/^ficha/,'ficha'],[/^domicilio/,'domicilio'],[/^f\.?\s*ingreso|^fecha (de )?ingreso/,'fingreso'],[/inicio.*quimio|inicio.*qt/,'fqt'],[/^dia.*quimio|^dia.*qt|^d[ií]a qt/,'diaqt']];
+const ENT_FILAS=[[/^antecedentes/,'ANTECEDENTES'],[/^diagnosticos?/,'DIAGNOSTICOS'],[/^tratamiento/,'TRATAMIENTO'],[/^examenes/,'EXAMENES'],[/^planes?/,'PLANES'],[/^comentarios?/,'COMENTARIOS'],[/^pendientes?/,'PENDIENTES'],[/^transfusiones?/,'TRANSFUSIONES']];
+function entregaBloques(filas,hoy){const B=[];const y=+(hoy||iso(new Date())).slice(0,4);let cur=null;
+ for(let r=0;r<filas.length;r++){const f=filas[r]||[];const ix=f.findIndex(c=>/^\s*sala\s*:?\s*$/i.test(c||''));
+  if(ix>=0&&f.some(c=>/^\s*nombre\s*$/i.test(c||''))){const cols={};f.forEach((c,i)=>{const t=nrm(c).trim();const k=(ENT_CAMPOS.find(([re])=>re.test(t))||[])[1];if(k&&!(k in cols))cols[k]=i});
+   const v=filas[r+1]||[];cur={fila:r+1,cama:null,campos:{},atb:[],atbTexto:'',extra:[]};B.push(cur);
+   for(const k in cols){const val=v[cols[k]];if(val==null||String(val).trim()==='')continue;cur[k]=String(val).trim()}
+   if(cur.cama){const m=cur.cama.match(/(\d{1,2})\s*[-–.\/ ]\s*(\d)/);cur.cama=m?(+m[1])+'-'+m[2]:cur.cama}
+   cur.fingreso=celdaFecha(cur.fingreso,y);cur.fqt=celdaFecha(cur.fqt,y);if(cur.diaqt!=null){const d=String(cur.diaqt).match(/-?\d+/);cur.diaqt=d?+d[0]:null}
+   r++;continue}
+  if(!cur)continue;
+  const li=f.findIndex(c=>c&&ENT_FILAS.some(([re])=>re.test(nrm(c).trim())));
+  f.forEach((c,i)=>{if(c&&/^\s*atb\s*:/i.test(c)){cur.atbTexto=String(c).trim();cur.atb=leerATB(c)}});
+  if(li<0)continue;const lab=ENT_FILAS.find(([re])=>re.test(nrm(f[li]).trim()))[1];
+  const val=f.slice(li+1).filter(c=>c!=null&&String(c).trim()!=='').join('\n').trim();
+  f.slice(0,li).forEach(c=>{if(c&&String(c).trim()&&!/^\s*atb\s*:/i.test(c))cur.extra.push(String(c).trim())});
+  if(val)cur.campos[lab]=(cur.campos[lab]?cur.campos[lab]+'\n':'')+val}
+ return B}
+function leerATB(t){const s=String(t).replace(/^\s*atb\s*:\s*/i,'').trim();if(!s||/^no\b|^sin\b|^-$/i.test(s))return [];const out=[];
+ s.split(/[,;+\n]|\s+y\s+/).forEach(p=>{const m=p.match(/([A-Za-zÁÉÍÓÚáéíóúñÑ\-\/ ]{3,}?)\s*\(\s*(\d{1,2})\s*\/\s*(\d{1,2})\s*\)/);if(m)out.push({farmaco:m[1].trim(),a:+m[2],b:+m[3]});else if(p.trim())out.push({farmaco:p.trim(),a:null,b:null})});return out}
+function lineasCelda(t){return String(t||'').split(/\n|;\s*|(?<=\.)\s+(?=[A-ZÁÉÍÓÚÑ])/).map(x=>x.replace(/^\s*[-•*\d]+[.)-]?\s+/,'').trim()).filter(Boolean)}
+function yaEsta(txt,ref){if(!ref)return false;const R=nrm(ref);const tk=nrm(txt).replace(/[^a-z0-9 ]/g,' ').split(/\s+/).filter(x=>x.length>3);if(!tk.length)return R.includes(nrm(txt).trim());return tk.filter(x=>R.includes(x)).length/tk.length>=0.6}
+// ctx: {hoy, fechaHoja, sexo, reglas, dx, pp, ind, arr, qtDia, qtEsq, cama, fingreso}
+function entregaItems(b,ctx){const hoy=ctx.hoy,fh=ctx.fechaHoja||addDays(hoy,-1),delta=Math.max(0,diasEntre(fh,hoy));const fuente='Entrega '+dm(fh);const it=[];
+ const aviso=t=>it.push({sys:'aviso',tipo:'aviso',txt:t,fuente,fecha:fh});
+ if(b.cama&&ctx.cama&&b.cama!==ctx.cama)aviso(`La entrega la ubica en cama ${b.cama}; en la app está en ${ctx.cama}.`);
+ if(b.fingreso&&ctx.fingreso&&b.fingreso!==ctx.fingreso)aviso(`Fecha de ingreso en la entrega ${dm(b.fingreso)}; en la app ${dm(ctx.fingreso)}.`);
+ if(b.diaqt!=null){const dq=b.diaqt+delta;if(ctx.qtDia!=null&&ctx.qtDia!==''&&+ctx.qtDia!==dq)aviso(`Día de QT: según la entrega hoy sería +${dq}${b.fqt?' (inicio '+dm(b.fqt)+')':''}; en la app +${ctx.qtDia}.`);else if(ctx.qtDia==null||ctx.qtDia==='')it.push({sys:'qt',tipo:'qtdia',txt:`Día +${dq} de QT según la entrega${b.fqt?' (inicio '+dm(b.fqt)+')':''}.`,valor:dq,fuente,fecha:fh,estado0:'prop'})}
+ const ind=ctx.ind||'';
+ b.atb.forEach(x=>{if(x.a==null)return;const a2=Math.min(x.a+delta,x.b);const L=ind.split('\n').find(l=>nrm(l).includes(nrm(x.farmaco).split(' ')[0]));
+  if(!L){aviso(`La entrega lista ${x.farmaco} (${a2}/${x.b}), que no está en las indicaciones.`);return}
+  const n=(L.match(/\((\d{1,2})\)\s*$/)||[])[1];if(n&&+n!==a2)aviso(`${x.farmaco}: según la entrega hoy sería (${a2}/${x.b}); en indicaciones (${n}).`)});
+ lineasCelda(b.campos.DIAGNOSTICOS).forEach(l=>{if(!yaEsta(l,ctx.dx))it.push({sys:'dx',tipo:'dx',txt:dot(cap(normAbrev(l))),fuente,fecha:fh})});
+ if(b.campos.TRATAMIENTO&&!yaEsta(b.campos.TRATAMIENTO,(ctx.qtEsq||'')+' '+(ctx.dx||'')))aviso(`Tratamiento según la entrega: «${b.campos.TRATAMIENTO.replace(/\n/g,' · ')}».`);
+ if(b.campos.EXAMENES)it.push({sys:'lab',tipo:'lab',txt:/^\s*\d{1,2}[\/.]\d{1,2}/.test(b.campos.EXAMENES)?`Según entrega: ${b.campos.EXAMENES.replace(/\n/g,' · ')}`:`Según entrega ${dm(fh)}: ${b.campos.EXAMENES.replace(/\n/g,' · ')}`,fuente,fecha:fh,estado0:'prop'});
+ lineasCelda(b.campos.PLANES).forEach(l=>{if(!yaEsta(l,ctx.pp))it.push({sys:'pp',tipo:'pp',txt:dot(cap(normAbrev(fechasRelativas(l,fh>=hoy?addDays(hoy,-1):fh,null,hoy)))),fuente,fecha:fh})});
+ const fRef=fh>=hoy?addDays(hoy,-1):fh;
+ if(b.campos.COMENTARIOS){const nota={texto:b.campos.COMENTARIOS,fecha:fRef,hora:null,sinFecha:diasEntre(fRef,hoy)===1,fuente};extraerNovedades(nota,{hoy,sexo:ctx.sexo,reglas:ctx.reglas}).forEach(x=>{x.fuente=fuente;it.push(x)})}
+ lineasCelda(b.campos.PENDIENTES).forEach(l=>{const c=normAbrev(fechasRelativas(l.replace(/^\(p\)\s*/i,'').replace(/^pendientes?\s*:?\s*/i,''),fh>=hoy?addDays(hoy,-1):fh,null,hoy));if(yaEsta(c,ctx.arr))return;it.push({sys:'est',tipo:'pend',txt:dot('(P) '+cap(c)),fuente,fecha:fh,clave:claveExamen(c)})});
+ if(b.campos.TRANSFUSIONES&&!/^(no|sin|-|estandar)$/i.test(b.campos.TRANSFUSIONES.trim()))it.push({sys:'hem',tipo:'tx',txt:`Transfusiones según entrega: ${b.campos.TRANSFUSIONES.replace(/\n/g,' · ')}.`.replace(/\.\.$/,'.'),fuente,fecha:fh,estado0:'prop'});
+ return depurar(it.map(x=>({...x,orig:x.orig||x.txt})))}
 // ───────── informe enmascarado ─────────
 const ESTRUCTURA=new Set(['evolucion','medica','fecha','hora','cama','sala','paciente','run','rut','diagnosticos','diagnostico','planes','plan','problemas','y','indicaciones','reposo','regimen','examen','fisico','examenes','imagenes','comentario','cmr','hematologia','pendiente','pendientes','servicio','unidad','medico','profesional','emision','pagina','documento','registro','clinico','electronico','al','de','del','la','el','en','por','con','sin','oxigeno','control','residente','sos','adicionales','evolucion','o','hospital','nombre','social','edad','ficha','ingreso','alta','firma','hoy','ayer','anoche','afebril','neutropenico','neutropenica']);
 function enmascarar(linea){return String(linea).split(/(\s+)/).map(w=>{if(/^\s+$/.test(w))return w;const base=nrm(w).replace(/[^a-z]/g,'');if(base&&ESTRUCTURA.has(base))return w;return w.replace(/[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]/g,c=>c===c.toUpperCase()?'X':'x').replace(/\d/g,'9')}).join('')}
-const api={cabecera,partirNotas,frases,reescribir,extraerNovedades,depurar,combinar,asociar,huellaTokens,huellaRut,iniciales,inicialesCompat,fechasRelativas,rel,addDays,diasEntre,aplicarReglas,enmascarar,sistemaDe,normAbrev,sha256,esCompleta};
+const api={xlsxHojas,hojaFecha,hojaDelDia,entregaBloques,entregaItems,leerATB,similares,yaEsta,cabecera,partirNotas,frases,reescribir,extraerNovedades,depurar,combinar,asociar,huellaTokens,huellaRut,iniciales,inicialesCompat,fechasRelativas,rel,addDays,diasEntre,aplicarReglas,enmascarar,sistemaDe,normAbrev,sha256,esCompleta};
 root.HematoLote=api;if(typeof module!=='undefined')module.exports=api;
 })(typeof window!=='undefined'?window:globalThis);
 
 </script>
-<title>Hematología Intensiva HGGB · v19</title>
+<title>Hematología Intensiva HGGB · v20</title>
 <script>/**
  * @licstart The following is the entire license notice for the
  * JavaScript code in this page
@@ -518,7 +592,7 @@ body.touch .mono{font-size:14px}
 <body>
 <div class="app">
 <div class="hdr">
-  <div><b>Hematología Intensiva · HGGB</b><br><small>Evolución e ingreso · v19 · funciona sin internet</small></div>
+  <div><b>Hematología Intensiva · HGGB</b><br><small>Evolución e ingreso · v20 · funciona sin internet</small></div>
   <div style="font-size:11px"><select class="modosel" onchange="setModo(this.value)"><option value="full">Planes e indicaciones completos (desde evolución anterior)</option><option value="short">Planes e indicaciones acortados (FDS / festivo)</option></select> <span id="modo-auto" style="opacity:.7"></span></div>
   <div class="nav"><button class="nb" id="btouch" onclick="toggleTouch()">Táctil</button>
     <button class="nb on" id="nav-camas" onclick="go('camas')">Camas</button>
@@ -532,7 +606,7 @@ body.touch .mono{font-size:14px}
 <!-- ═══ CARGAR TODO ═══ -->
 <div class="scr" id="scr-lote">
   <h2>Cargar todo</h2>
-  <div class="note">Evoluciones del SIRyC (PDF con texto o escaneado), PDF de exámenes, pantallazos, fotos de la hoja de enfermería, .docx o .txt, todo junto. Cada archivo se reconoce por su contenido y se asocia al paciente por RUT, nombre (solo huellas cifradas) o cama + iniciales. Un archivo con problemas no detiene a los demás.</div>
+  <div class="note">Evoluciones del SIRyC (PDF con texto o escaneado), entrega de turno (Excel), PDF de exámenes, pantallazos, fotos de la hoja de enfermería, .docx o .txt, todo junto. Cada archivo se reconoce por su contenido y se asocia al paciente por RUT, nombre (solo huellas cifradas) o cama + iniciales. Un archivo con problemas no detiene a los demás.</div>
   <div class="drop" id="ldrop">Arrastra aquí o toca para elegir archivos (varios a la vez)</div>
   <div class="flist" id="lfiles"></div>
   <div class="sub">Texto pegado (controles CMR, comentarios de la entrega, notas sin encabezado)</div>
@@ -3454,7 +3528,7 @@ function generar(){saveDraft();const p=P(),A=[],L=[],a=G('o','a');const hoy=dm(c
  if(cur.mode==='ing'&&V('am')&&!/AM:/i.test(dx))dx+='\nAM: '+V('am');
  // alertas
  {const cp=copPorConfirmar();if(cp.length)A.push('Copiado de ayer sin confirmar: '+cp.map(x=>cap(x.toLowerCase())).join(', ')+'. El texto se generó igual.');
-  const ni=impNota();if(ni){const sinRev=ni.imp.filter(x=>x.estado==='incl'&&!['dx','pp','ind','cond','ef'].includes(x.sys)).length;if(sinRev)A.push(sinRev+' novedad(es) importada(s) incluida(s) sin marcar como revisadas.');
+  const ni=impNota();if(ni){const sinRev=ni.imp.filter(x=>x.estado==='incl'&&!['dx','pp','ind','cond','ef'].includes(x.sys)).length;const nAv=ni.imp.filter(x=>x.estado==='aviso').length;if(nAv)A.push(nAv+' diferencia(s) con la entrega de turno sin revisar.');if(sinRev)A.push(sinRev+' novedad(es) importada(s) incluida(s) sin marcar como revisadas.');
    const prop=ni.imp.filter(x=>x.estado==='incl'&&['dx','pp','ind','cond'].includes(x.sys)).length;if(prop)A.push(prop+' propuesta(s) de diagnósticos / planes / indicaciones / condición sin aplicar (no van en el texto).')}
   const falta=[];if(!['sv_pas','sv_fc','sv_t','sv_sat'].some(k=>V(k)))falta.push('signos vitales');if(!V('d1')&&!V('bh1')&&!V('bh24')&&!C('rn_bhnd'))falta.push('diuresis / BH');if(!V('ex_txt'))falta.push('exámenes de hoy');if(falta.length)A.push('Falta de hoy: '+falta.join(', ')+'.')}
  checkAlerts(A,{T,gb,ran,hb,plt,dx});
@@ -3710,14 +3784,15 @@ document.addEventListener('paste',e=>{if(!$('scr-hoja')||!$('scr-hoja').classLis
 // ═══ CARGA EN LOTE (fase 3) ═══
 const LT=HematoLote;let lFiles=[],lPastes=[],lRes=null,fotoPend={};
 function lInit(){const d=$('ldrop');if(!d||d.dataset.ok)return;d.dataset.ok=1;
- d.onclick=()=>{const i=document.createElement('input');i.type='file';i.multiple=true;i.accept='.pdf,.txt,.docx,image/*';i.onchange=()=>lAddFiles(i.files);i.click()};
+ d.onclick=()=>{const i=document.createElement('input');i.type='file';i.multiple=true;i.accept='.pdf,.txt,.docx,.xlsx,image/*';i.onchange=()=>lAddFiles(i.files);i.click()};
  d.ondragover=e=>{e.preventDefault();d.classList.add('act')};d.ondragleave=()=>d.classList.remove('act');d.ondrop=e=>{e.preventDefault();d.classList.remove('act');lAddFiles(e.dataTransfer.files)};
  if(!$('l-fpeg').value)$('l-fpeg').value=ayerISO();if(!lPastes.length)lAddPaste();lRender()}
-async function lAddFiles(fl){for(const f of fl){if(lFiles.length>=80)break;lFiles.push({name:f.name,type:f.type,file:f})}lRender()}
+async function lAddFiles(fl){for(const f of fl){if(lFiles.length>=80)break;const x={name:f.name,type:f.type,file:f};lFiles.push(x);
+  if(/\.xlsx$/i.test(f.name)){try{x.hojas=await LT.xlsxHojas(await f.arrayBuffer());x.hoja=LT.hojaDelDia(x.hojas,todayISO())}catch(e){x.err=e.message}}}lRender()}
 function lAddPaste(){lPastes.push({cama:'',texto:''});lRender()}
 function lCamasOpts(sel){const act=Object.values(DB.patients).filter(p=>p.activo&&p.cama).sort((a,b)=>BEDS.indexOf(a.cama)-BEDS.indexOf(b.cama));
  return `<option value="">— detectar por encabezado —</option>`+act.map(p=>`<option value="${p.id}"${p.id===sel?' selected':''}>${p.cama} · ${esc(p.nombre)}</option>`).join('')}
-function lRender(){$('lfiles').innerHTML=lFiles.map((f,i)=>`<div><span>${esc(f.name)}</span><span style="cursor:pointer;color:var(--rd)" onclick="lFiles.splice(${i},1);lRender()">✕</span></div>`).join('')||'<div class="note">Sin archivos.</div>';
+function lRender(){$('lfiles').innerHTML=lFiles.map((f,i)=>`<div><span>${esc(f.name)}${f.hojas?` · entrega de turno · hoja <select onchange="lFiles[${i}].hoja=+this.value">${f.hojas.map((h,k)=>`<option value="${k}"${k===f.hoja?' selected':''}>${esc(h.nombre)}</option>`).join('')}</select>`:''}${f.err?' · <span style="color:var(--rd)">'+esc(f.err)+'</span>':''}</span><span style="cursor:pointer;color:var(--rd)" onclick="lFiles.splice(${i},1);lRender()">✕</span></div>`).join('')||'<div class="note">Sin archivos.</div>';
  $('lpastes').innerHTML=lPastes.map((x,i)=>`<div class="lpaste"><div class="row"><b>Texto ${i+1} · cama</b><select onchange="lPastes[${i}].cama=this.value">${lCamasOpts(x.cama)}</select><span style="cursor:pointer;color:var(--rd);margin-left:auto" onclick="lPastes.splice(${i},1);lRender()">✕</span></div><textarea rows="5" class="mono" oninput="lPastes[${i}].texto=this.value" placeholder="Pega aquí controles (CMR), comentarios de la entrega o una evolución…">${esc(x.texto)}</textarea></div>`).join('')}
 function lLimpiar(){lFiles=[];lPastes=[];lRes=null;$('lres').innerHTML='';$('lst').textContent='';lAddPaste()}
 function lEstado(t){$('lst').textContent=t}
@@ -3750,13 +3825,19 @@ function notasDeDoc(texto,fuente,orden,pegado){const brutas=pegado?LT.partirNota
 function lPacientes(){return Object.values(DB.patients).filter(p=>p.activo).map(p=>({id:p.id,cama:p.cama,nombre:p.nombre,hue:p.hue}))}
 async function lProcesar(){if(!lFiles.length&&!lPastes.some(x=>x.texto.trim())){alert('Agrega archivos o texto.');return}
  $('lgo').disabled=true;const R={pac:{},porAsociar:[],errores:[],docs:[]};const hoy=todayISO(),fpeg=$('l-fpeg').value||ayerISO();const pac=lPacientes();
- const slot=pid=>R.pac[pid]=R.pac[pid]||{notas:[],labs:[],hojas:[],fuentes:new Set()};
+ const slot=pid=>R.pac[pid]=R.pac[pid]||{notas:[],labs:[],hojas:[],entrega:[],fuentes:new Set()};
  const asignar=(nota,pidFijo)=>{let a=pidFijo?{pid:pidFijo,motivo:'elegido',seguro:true}:LT.asociar(nota.cab||{},pac);
   if(a.pid&&a.seguro){slot(a.pid).notas.push(nota);slot(a.pid).fuentes.add(nota.fuente);return}
   R.porAsociar.push({tipo:'nota',nota,sug:a.pid,motivo:a.motivo})};
  let k=0;
  for(const f of lFiles){k++;lEstado(`Leyendo ${k} de ${lFiles.length}: ${f.name}`);
-  try{const d=await docTexto(f.file,lEstado);
+  try{if(/\.xlsx$/i.test(f.name)){if(f.err)throw new Error(f.err);const hj=f.hojas[f.hoja];const fh=LT.hojaFecha(hj.nombre,hoy)||fpeg;const B=LT.entregaBloques(hj.filas,hoy);
+    if(!B.length)throw new Error('no encontré bloques con "SALA:" en la hoja '+hj.nombre);
+    R.docs.push({fuente:f.name+' · hoja '+hj.nombre,tipo:'entrega de turno',filas:hj.filas,bloques:B});
+    B.forEach(b=>{const cab={nombre:b.nombre,run:b.run,cama:b.cama};const ent={b,fechaHoja:fh,fuente:f.name,cab};
+     if(!b.nombre&&!b.run&&!Object.keys(b.campos).length)return; // cama vacía en la planilla
+     const a=LT.asociar(cab,pac);if(a.pid&&a.seguro){slot(a.pid).entrega.push(ent);slot(a.pid).fuentes.add('entrega '+hj.nombre)}else R.porAsociar.push({tipo:'entrega',ent,sug:a.pid,motivo:a.motivo,fuente:f.name})});continue}
+   const d=await docTexto(f.file,lEstado);
    if(d.hoja){R.porAsociar.push({tipo:'hoja',hoja:d.hoja,fuente:f.name,sug:null,motivo:'foto de hoja de enfermería'});R.docs.push({fuente:f.name,tipo:'hoja de enfermería',texto:''});continue}
    if(esLab(d.texto)){if(!d.buf)throw new Error('examen sin PDF');const r=await procesarArchivo(f.name,d.buf.slice(0));const cab=LT.cabecera(d.texto);
     const a=LT.asociar({nombre:r.name||cab.nombre,run:cab.run},pac);const pid=a.pid&&a.seguro?a.pid:(matchPatient(r.name||'')||null);
@@ -3773,11 +3854,11 @@ async function lProcesar(){if(!lFiles.length&&!lPastes.some(x=>x.texto.trim())){
 function lRenderRes(){const R=lRes;if(!R)return;const act=Object.values(DB.patients).filter(p=>p.activo).sort((a,b)=>BEDS.indexOf(a.cama)-BEDS.indexOf(b.cama));
  const libres=BEDS.filter(b=>!DB.beds[b]);let h='';
  const filas=Object.entries(R.pac).sort((a,b)=>BEDS.indexOf(DB.patients[a[0]].cama)-BEDS.indexOf(DB.patients[b[0]].cama)).map(([pid,s])=>{const p=DB.patients[pid];
-  return `<tr><td><b>${esc(p.cama||'—')}</b></td><td>${esc(p.nombre)}</td><td>${s.notas.length} nota(s)${s.labs.length?', '+s.labs.length+' examen(es)':''}${s.hojas.length?', hoja de enfermería':''}</td><td class="note">${esc([...s.fuentes].join(', '))}</td><td>${s.estado?esc(s.estado):'—'}</td><td>${s.aplicado?`<button class="btn sm" onclick="abrirHoja('${pid}','evo')">Abrir</button>`:''}</td></tr>`}).join('');
+  return `<tr><td><b>${esc(p.cama||'—')}</b></td><td>${esc(p.nombre)}</td><td>${s.notas.length} nota(s)${s.labs.length?', '+s.labs.length+' examen(es)':''}${s.hojas.length?', hoja de enfermería':''}${(s.entrega||[]).length?', entrega de turno':''}</td><td class="note">${esc([...s.fuentes].join(', '))}</td><td>${s.estado?esc(s.estado):'—'}</td><td>${s.aplicado?`<button class="btn sm" onclick="abrirHoja('${pid}','evo')">Abrir</button>`:''}</td></tr>`}).join('');
  h+=`<div class="sec"><div class="st">PACIENTES CON DATOS</div><table class="asg"><tr><th>Cama</th><th>Paciente</th><th>Cargado</th><th>Fuentes</th><th>Estado</th><th></th></tr>${filas||'<tr><td colspan="6" class="note">Ninguno todavía.</td></tr>'}</table></div>`;
  if(R.porAsociar.length){h+=`<div class="sec"><div class="st">POR ASOCIAR (no se pudo reconocer al paciente con seguridad)</div><table class="asg"><tr><th>Documento</th><th>Motivo</th><th>Asignar a</th></tr>${R.porAsociar.map((x,i)=>{
-  const d=x.tipo==='nota'?`${esc(x.nota.fuente)} · ${x.nota.cab&&x.nota.cab.nombre?'iniciales '+esc(LT.iniciales(x.nota.cab.nombre)):'sin nombre'}${x.nota.cab&&x.nota.cab.cama?' · cama '+esc(x.nota.cab.cama):''}${x.nota.fecha?' · '+dm(x.nota.fecha):''}`:x.tipo==='lab'?`${esc(x.fuente)} · examen · ${x.nombre?'iniciales '+esc(LT.iniciales(x.nombre)):'sin nombre'}`:`${esc(x.fuente)} · foto de hoja de enfermería`;
-  const nuevo=x.tipo==='nota'&&x.nota.cab&&x.nota.cab.cama&&!DB.beds[x.nota.cab.cama]?`<option value="nuevo:${x.nota.cab.cama}"${x.asig==='nuevo:'+x.nota.cab.cama?' selected':''}>Paciente nuevo en cama ${x.nota.cab.cama}</option>`:'';
+  const d=x.tipo==='nota'?`${esc(x.nota.fuente)} · ${x.nota.cab&&x.nota.cab.nombre?'iniciales '+esc(LT.iniciales(x.nota.cab.nombre)):'sin nombre'}${x.nota.cab&&x.nota.cab.cama?' · cama '+esc(x.nota.cab.cama):''}${x.nota.fecha?' · '+dm(x.nota.fecha):''}`:x.tipo==='lab'?`${esc(x.fuente)} · examen · ${x.nombre?'iniciales '+esc(LT.iniciales(x.nombre)):'sin nombre'}`:x.tipo==='entrega'?`${esc(x.fuente)} · entrega · cama ${esc(x.ent.b.cama||'?')} · ${x.ent.b.nombre?'iniciales '+esc(LT.iniciales(x.ent.b.nombre)):'sin nombre'}`:`${esc(x.fuente)} · foto de hoja de enfermería`;
+  const cn=x.tipo==='nota'?(x.nota.cab||{}).cama:x.tipo==='entrega'?x.ent.b.cama:null;const nuevo=cn&&!DB.beds[cn]?`<option value="nuevo:${cn}"${x.asig==='nuevo:'+cn?' selected':''}>Paciente nuevo en cama ${cn}</option>`:'';
   return `<tr><td>${d}</td><td class="note">${esc(x.motivo||'')}</td><td><select onchange="lRes.porAsociar[${i}].asig=this.value"><option value="">— no usar —</option>${nuevo}${act.map(p=>`<option value="${p.id}"${(x.asig||x.sug)===p.id?' selected':''}>${p.cama} · ${esc(p.nombre)}</option>`).join('')}</select></td></tr>`}).join('')}</table></div>`}
  if(R.errores.length)h+=`<div class="sec"><div class="st" style="background:var(--rd)">NO SE PUDIERON LEER (el resto sigue normal)</div>${R.errores.map(e=>`<div class="note">✕ ${esc(e.fuente)}: ${esc(e.error)}</div>`).join('')}</div>`;
  h+=`<div class="row" style="margin-top:6px"><button class="btn gr" onclick="lAplicar()">Guardar en fichas y dejar prepicadas</button><button class="btn sec" onclick="lInforme()">Informe de lectura (enmascarado)</button></div>`;
@@ -3785,24 +3866,25 @@ function lRenderRes(){const R=lRes;if(!R)return;const act=Object.values(DB.patie
 // aplica lo cargado: notas importadas al historial, exámenes, nota de hoy prepicada con novedades
 function lAplicar(){const R=lRes;if(!R)return;const hoy=todayISO();
  R.porAsociar.forEach(x=>{const v=x.asig!==undefined?x.asig:(x.sug||'');if(!v)return;let pid=v;
-  if(v.startsWith('nuevo:')){const cama=v.slice(6);if(DB.beds[cama])return;const cab=x.nota.cab||{};const p={id:uid(),notes:[],labs:[],upd:Date.now(),nombre:LT.iniciales(cab.nombre||'')||'Paciente',sexo:'m',fingreso:x.nota.fecha||hoy,falta:null,activo:true,cama};DB.patients[p.id]=p;DB.beds[cama]=p.id;pid=p.id}
-  const s=R.pac[pid]=R.pac[pid]||{notas:[],labs:[],hojas:[],fuentes:new Set()};
-  if(x.tipo==='nota'){s.notas.push(x.nota);s.fuentes.add(x.nota.fuente)}else if(x.tipo==='lab'){s.labs.push(x.lab);s.fuentes.add(x.fuente)}else if(x.tipo==='hoja'){s.hojas.push(x.hoja);s.fuentes.add(x.fuente)}x.hecho=true});
+  if(v.startsWith('nuevo:')){const cama=v.slice(6);if(DB.beds[cama])return;const cab=x.tipo==='entrega'?x.ent.cab:(x.nota.cab||{});const p={id:uid(),notes:[],labs:[],upd:Date.now(),nombre:LT.iniciales(cab.nombre||'')||'Paciente',sexo:'m',fingreso:(x.tipo==='entrega'?x.ent.b.fingreso:x.nota.fecha)||hoy,falta:null,activo:true,cama};DB.patients[p.id]=p;DB.beds[cama]=p.id;pid=p.id}
+  const s=R.pac[pid]=R.pac[pid]||{notas:[],labs:[],hojas:[],entrega:[],fuentes:new Set()};s.entrega=s.entrega||[];
+  if(x.tipo==='nota'){s.notas.push(x.nota);s.fuentes.add(x.nota.fuente)}else if(x.tipo==='lab'){s.labs.push(x.lab);s.fuentes.add(x.fuente)}else if(x.tipo==='hoja'){s.hojas.push(x.hoja);s.fuentes.add(x.fuente)}else if(x.tipo==='entrega'){s.entrega.push(x.ent);s.fuentes.add('entrega')}x.hecho=true});
  R.porAsociar=R.porAsociar.filter(x=>!x.hecho);
  Object.entries(R.pac).forEach(([pid,s])=>{if(s.aplicado)return;try{lAplicarPaciente(pid,s,hoy);s.aplicado=true}catch(e){s.estado='Error: '+(e.message||e);R.errores.push({fuente:(DB.patients[pid]||{}).cama||pid,error:e.message||String(e)})}});
  saveDB();lRenderRes();renderCamas&&renderCamas()}
 function aprenderHuellas(p,cab){if(!cab)return;p.hue=p.hue||{r:[],t:[]};const r=cab.run&&LT.huellaRut(cab.run);if(r&&!p.hue.r.includes(r))p.hue.r.push(r);
  if(cab.nombre)LT.huellaTokens(cab.nombre).forEach(t=>{if(!p.hue.t.includes(t))p.hue.t.push(t)});if(p.hue.t.length>24)p.hue.t=p.hue.t.slice(-24)}
 function lAplicarPaciente(pid,s,hoy){const p=DB.patients[pid];if(!p)throw new Error('paciente no encontrado');
- s.notas.forEach(n=>aprenderHuellas(p,n.cab));
+ s.notas.forEach(n=>aprenderHuellas(p,n.cab));(s.entrega||[]).forEach(e=>{aprenderHuellas(p,e.cab);if(e.b.fingreso&&!p.fingreso)p.fingreso=e.b.fingreso});
  // historial: cada nota importada queda guardada
  s.notas.forEach(n=>{const k=LT.sha256(n.texto).slice(0,16);if(!p.notes.some(x=>x.tipo==='imp'&&x.hash===k))p.notes.push({fecha:n.fecha||hoy,hora:n.hora||'',tipo:'imp',texto:n.texto,fuente:n.fuente,hash:k,upd:Date.now()})});
  s.labs.forEach(r=>addLab(p,r));if(s.hojas.length)fotoPend[pid]=s.hojas[s.hojas.length-1];
  p.notes.sort((a,b)=>a.fecha<b.fecha?-1:a.fecha>b.fecha?1:0);
- if(!s.notas.length){s.estado=s.labs.length?'Exámenes guardados':'Foto lista para revisar en la hoja';p.upd=Date.now();return}
- const res=LT.combinar(s.notas,{hoy,sexo:p.sexo,reglas:DB.reglas||[],dxActual:p.dx||''},separar);
- let n=p.notes.find(x=>x.fecha===hoy&&x.tipo==='evo');const items=res.items.map(it=>({...it,id:uid(),estado:it.descartar?'desc':'incl',orig0:it.txt}));
- if(n&&n.state&&n.texto){n.imp=(n.imp||[]).concat(items.filter(it=>!(n.imp||[]).some(o=>o.txt===it.txt)));s.estado='Ya tenía evolución de hoy: se agregaron novedades';p.upd=Date.now();return}
+ const ent=s.entrega||[];if(!s.notas.length&&!ent.length){s.estado=s.labs.length?'Exámenes guardados':'Foto lista para revisar en la hoja';p.upd=Date.now();return}
+ const res=s.notas.length?LT.combinar(s.notas,{hoy,sexo:p.sexo,reglas:DB.reglas||[],dxActual:p.dx||''},separar):{items:[],base:null};
+ let n=p.notes.find(x=>x.fecha===hoy&&x.tipo==='evo');const mk=it=>({...it,id:uid(),estado:it.sys==='aviso'?'aviso':it.descartar?'desc':(it.estado0||'incl'),orig0:it.txt});let items=res.items.map(mk);
+ const entItems=st=>{const out=[];ent.forEach(e=>{try{LT.entregaItems(e.b,{hoy,fechaHoja:e.fechaHoja,sexo:p.sexo,reglas:DB.reglas||[],dx:st.dx||'',pp:st.pp||'',ind:st.ind||'',arr:st.arr_narr||'',qtDia:st.qt_dia,qtEsq:st.qt_esq,cama:p.cama,fingreso:p.fingreso}).forEach(x=>{if(!items.concat(out).some(o=>o.sys===x.sys&&LT.similares(o.txt,x.txt)))out.push(mk(x))})}catch(er){out.push(mk({sys:'aviso',txt:'No se pudo leer el bloque de la entrega: '+er.message,fuente:'Entrega'}))}});return out};
+ if(n&&n.state&&n.texto){items=items.concat(entItems(n.state));n.imp=(n.imp||[]).concat(items.filter(it=>!(n.imp||[]).some(o=>o.txt===it.txt)));s.estado='Ya tenía evolución de hoy: se agregaron novedades';p.upd=Date.now();return}
  const prev=[...p.notes].reverse().find(x=>x.state&&x.fecha<hoy&&x.tipo!=='imp');const ch=[];let st;
  const baseNueva=res.base&&(!prev||res.base.fecha>=prev.fecha);
  if(prev){st=JSON.parse(JSON.stringify(prev.state));Object.keys(st).forEach(k=>{if(isDaily(k))delete st[k]});if(prev.final){st.dx=prev.final.dx;st.pp=prev.final.pp;st.ind=prev.final.ind}['anam','am','i_cat','i_dx','i_det'].forEach(k=>delete st[k]);
@@ -3816,9 +3898,10 @@ function lAplicarPaciente(pid,s,hoy){const p=DB.patients[pid];if(!p)throw new Er
  if(!st.qt_dia&&st.dx){const m=st.dx.match(/(?:[Dd][ií]a|QT|D)\s*\+\s*(\d{1,3})/);if(m)st.qt_dia=m[1]}
  if(prev&&(prev.state.i_ini||prev.state.i_esc))st.i_comp=1;
  if(st.prem_txt===undefined)st.prem_txt='Clorfenamina 10mg EV\nBetametasona 4mg EV';
+ items=items.concat(entItems(st));
  n=n||{fecha:hoy,tipo:'evo'};n.state=st;n.imp=items;n.cambios=ch;n.origen='lote';n.upd=Date.now();if(!p.notes.includes(n))p.notes.push(n);
  p.notes.sort((a,b)=>a.fecha<b.fecha?-1:a.fecha>b.fecha?1:0);p.upd=Date.now();
- const nInc=items.filter(i=>i.estado==='incl').length;s.estado=`Prepicada: ${nInc} novedad(es)${ch.length?', contadores al día':''}`}
+ const nInc=items.filter(i=>i.estado==='incl').length,nAv=items.filter(i=>i.estado==='aviso').length;s.estado=`Prepicada: ${nInc} novedad(es)${nAv?', '+nAv+' diferencia(s) con la entrega':''}${ch.length?', contadores al día':''}`}
 // ═══ leer la narrativa importada: frases estándar → casillas; el resto queda como líneas propias ═══
 const CLIN_KEYS=['c_cuidado','c_critico','c_grave','c_regular','c_beg','c_reserv','c_estable','c_agonico','c_confort','t_est','t_fav','t_desf','tol_bien','tol_irreg','tol_inc','i_prof','i_tbc','i_comp','i_ini','i_esc','i_af','i_av','pp_norm','pp_desc','pp_elev','pp_alza','pp_nd','n_luc','n_vig','n_ori','n_coop','n_tranq','n_animo','n_desor','n_somn','n_delir','s_asint','s_disnea','s_dolor','s_cefalea','s_nauseas','s_vomitos','s_diarrea','s_dabd','s_sang','s_otro','hd_est','hd_dva','hd_trans','hd_taq','hd_arr','r_amb','r_cn','r_mmv','r_cnaf','r_vmni','r_vmi','r_sinap','r_wob','r_taq','r_desat','r_mejor','rn_cons','rn_rec','rn_det','rn_falla','vo_buena','vo_parcial','vo_cero','vo_sne','vo_npt','dp_norm','dp_bland','dp_liq','dp_sin','ci_sindis','ci_sinint'];
 function inferirDesdeNarr(lineas){const st={},resto=[],sdet=[];const n=x=>norm(x).replace(/[.\s]+$/,'').trim();
@@ -3856,7 +3939,7 @@ function inferirDesdeNarr(lineas){const st={},resto=[],sdet=[];const n=x=>norm(x
 function aplicarInferido(st,inf){CLIN_KEYS.forEach(k=>delete st[k]);delete st.t_det;Object.assign(st,inf.st);if(inf.sdet.length)st.s_det=inf.sdet.join('. ')}
 // informe enmascarado
 function lInforme(){const R=lRes;if(!R)return;let out=['INFORME DE LECTURA (enmascarado: letras→x, números→9; solo quedan palabras de estructura)',''];
- R.docs.forEach(d=>{out.push('=== '+LT.enmascarar(d.fuente)+' · '+d.tipo+' ===');if(d.texto){const {L,lab}=clasificarNota(d.texto,{});L.forEach((l,i)=>{if(lab[i]==='blank')return;out.push(('['+lab[i]+']').padEnd(7)+LT.enmascarar(l))})}out.push('')});
+ R.docs.forEach(d=>{out.push('=== '+LT.enmascarar(d.fuente)+' · '+d.tipo+' ===');if(d.bloques){d.bloques.forEach(b=>{out.push(`[bloque] fila ${b.fila} · cama ${b.cama||'?'} · nombre ${b.nombre?'sí':'no'} · RUT ${b.run?'sí':'no'} · ingreso ${b.fingreso?'sí':'no'} · inicio QT ${b.fqt?'sí':'no'} · día QT ${b.diaqt!=null?'sí':'no'} · ATB ${LT.enmascarar(b.atbTexto||'—')}`);Object.entries(b.campos).forEach(([k,v])=>out.push(('['+k+']').padEnd(16)+LT.enmascarar(v.replace(/\n/g,' ⏎ '))));if(b.extra.length)out.push('[otras celdas]  '+LT.enmascarar(b.extra.join(' | ')))});out.push('[filas de la hoja] '+d.filas.length);d.filas.slice(0,12).forEach((f,i)=>out.push(('  fila '+(i+1)).padEnd(10)+(f||[]).map(c=>LT.enmascarar(String(c??''))).join(' | ')))}if(d.texto){const {L,lab}=clasificarNota(d.texto,{});L.forEach((l,i)=>{if(lab[i]==='blank')return;out.push(('['+lab[i]+']').padEnd(7)+LT.enmascarar(l))})}out.push('')});
  R.errores.forEach(e=>out.push('ERROR '+LT.enmascarar(e.fuente)+': '+e.error));
  $('mi-txt').value=out.join('\n');abrir('m-inf')}
 // ═══ HOJA: novedades importadas, pendientes, copiado de ayer, reglas ═══
@@ -3864,24 +3947,26 @@ const SYS_N={cond:'Condición',qt:'Tratamiento / QT',hem:'Hematológico',est:'Es
 const SYS_ORD=['cond','qt','hem','est','inf','neu','hd','resp','ren','dig','otro','lab','dx','pp','ind','ef'];
 function impNota(){const n=noteOf(false);return n&&n.imp?n:null}
 function renderImp(){const b=$('imp-panel');if(!b)return;const n=impNota();const pend=pendientesAyer();
- const it=n?n.imp:[];const vis=it.filter(x=>x.estado!=='desc'&&x.estado!=='apl'),desc=it.filter(x=>x.estado==='desc'),apl=it.filter(x=>x.estado==='apl');
- if(!vis.length&&!desc.length&&!pend.length&&!apl.length){b.innerHTML='';b.closest('.sec').style.display='none';return}b.closest('.sec').style.display='';
+ const it=n?n.imp:[];const avs=it.filter(x=>x.estado==='aviso');const vis=it.filter(x=>x.estado!=='desc'&&x.estado!=='apl'&&x.estado!=='aviso'),desc=it.filter(x=>x.estado==='desc'),apl=it.filter(x=>x.estado==='apl');
+ if(!vis.length&&!desc.length&&!pend.length&&!apl.length&&!avs.length){b.innerHTML='';b.closest('.sec').style.display='none';return}b.closest('.sec').style.display='';
  let h='';
+ if(avs.length)h+=`<div class="sub" style="color:var(--rd)">Diferencias con la entrega de turno (no van en el texto)</div>`+avs.map(x=>`<div class="imp-it" style="border-left-color:var(--rd);background:#fff4f4"><span class="t">${esc(x.txt)}</span><button class="btn sec sm" onclick="impSet('${x.id}','estado','desc')">Visto</button></div>`).join('');
  if(pend.length){h+=`<div class="sub">Pendientes de ayer</div>`+pend.map(x=>`<div class="imp-it"><span class="t">${esc(x.linea)}</span><span class="acc"><button class="btn sec sm" onclick="pendAccion(${x.i},'sigue')">Sigue</button><button class="btn sm" onclick="pendAccion(${x.i},'llego')">Llegó</button><button class="btn rd sm" onclick="pendAccion(${x.i},'quitar')">Quitar</button></span></div>`).join('')}
  if(vis.length){h+=`<div class="sub">Novedades importadas (incluidas en el texto en su lugar; revisa, edita o descarta)</div>`;
   SYS_ORD.forEach(sy=>{const g=vis.filter(x=>x.sys===sy);if(!g.length)return;h+=`<div class="imp-g">${SYS_N[sy]||sy}</div>`;
-   g.forEach(x=>{const editado=x.txt!==x.orig0;const ap={dx:'Agregar a diagnósticos',pp:'Agregar a planes',ind:'Agregar a indicaciones',lab:'Agregar a exámenes',cond:'Aplicar condición'}[x.sys];
+   g.forEach(x=>{const editado=x.txt!==x.orig0;const ap=x.tipo==='qtdia'?'Usar este día de QT':{dx:'Agregar a diagnósticos',pp:'Agregar a planes',ind:'Agregar a indicaciones',lab:'Agregar a exámenes',cond:'Aplicar condición'}[x.sys];
     h+=`<div class="imp-it ${x.estado==='ok'?'ok':''}"><select onchange="impSet('${x.id}','sys',this.value)">${SYS_ORD.map(k=>`<option value="${k}"${k===x.sys?' selected':''}>${SYS_N[k]}</option>`).join('')}</select>
      <textarea rows="${Math.min(5,Math.ceil(x.txt.length/95))}" oninput="impSet('${x.id}','txt',this.value,true)">${esc(x.txt)}</textarea>
-     <span class="acc">${ap?`<button class="btn sm" onclick="impAplicar('${x.id}')">${ap}</button>`:`<button class="btn ${x.estado==='ok'?'gr':'sec'} sm" title="Revisada" onclick="impSet('${x.id}','estado','${x.estado==='ok'?'incl':'ok'}')">✓</button>`}<button class="btn rd sm" title="Descartar" onclick="impSet('${x.id}','estado','desc')">✕</button>${editado?`<button class="btn sec sm" onclick="reglaDesde('${x.id}')">Guardar como regla</button>`:''}</span>
-     <div class="note">${esc((x.fuente||'')+(x.fecha?' · '+dm(x.fecha):'')+(x.hora?' '+x.hora:''))}${x.textual?' · textual':''}${x.orig&&x.orig!==x.txt?' · original: «'+esc(x.orig.slice(0,160))+(x.orig.length>160?'…':'')+'»':''}</div></div>`})})}
+     <span class="acc">${ap?`<button class="btn sm" onclick="impAplicar('${x.id}')">${ap}</button>`:(x.estado==='prop'?`<button class="btn sm" onclick="impSet('${x.id}','estado','ok')">Incluir en el texto</button>`:`<button class="btn ${x.estado==='ok'?'gr':'sec'} sm" title="Revisada" onclick="impSet('${x.id}','estado','${x.estado==='ok'?'incl':'ok'}')">✓</button>`)}<button class="btn rd sm" title="Descartar" onclick="impSet('${x.id}','estado','desc')">✕</button>${editado?`<button class="btn sec sm" onclick="reglaDesde('${x.id}')">Guardar como regla</button>`:''}</span>
+     <div class="note">${x.estado==='prop'?'<b>propuesta, no incluida</b> · ':''}${esc((x.fuente||'')+(x.fecha?' · '+dm(x.fecha):'')+(x.hora&&x.hora!=='99:99'?' '+x.hora:''))}${x.textual?' · textual':''}${x.orig&&x.orig!==x.txt?' · original: «'+esc(x.orig.slice(0,160))+(x.orig.length>160?'…':'')+'»':''}</div></div>`})})}
  if(desc.length)h+=`<details><summary class="note" style="cursor:pointer">Descartadas automáticamente o por ti (${desc.length})</summary>${desc.map(x=>`<div class="imp-it desc"><span class="t">${esc(x.txt)}</span><span class="note">${esc(x.motivo||'descartada')}</span><button class="btn sec sm" onclick="impSet('${x.id}','estado','incl')">Recuperar</button></div>`).join('')}</details>`;
  if(apl.length)h+=`<div class="note">Ya aplicadas a diagnósticos / planes / indicaciones / exámenes: ${apl.length}.</div>`;
  b.innerHTML=h}
 function impFind(id){const n=impNota();return n?n.imp.find(x=>x.id===id):null}
 function impSet(id,k,v,silent){const x=impFind(id);if(!x)return;x[k]=v;if(k==='txt'&&x.estado==='incl')x.estado='incl';const n=impNota();n.upd=Date.now();P().upd=Date.now();saveDB();if(!silent)renderImp();else if(k==='txt'){clearTimeout(window._tImp);window._tImp=setTimeout(renderImp,900)}}
 function impAplicar(id){const x=impFind(id);if(!x)return;const t=x.txt.trim();
- if(x.sys==='dx')setV('dx',V('dx').replace(/\s+$/,'')+'\n- '+t.replace(/^-\s*/,''));
+ if(x.tipo==='qtdia')setV('qt_dia',String(x.valor));
+ else if(x.sys==='dx')setV('dx',V('dx').replace(/\s+$/,'')+'\n- '+t.replace(/^-\s*/,''));
  else if(x.sys==='pp')setV('pp',V('pp').replace(/\s+$/,'')+'\n- '+t.replace(/^-\s*/,''));
  else if(x.sys==='ind')setV('ind_add',(V('ind_add')?V('ind_add')+'\n':'')+t.replace(/^-\s*/,''));
  else if(x.sys==='lab')setV('ex_prev',(V('ex_prev')?V('ex_prev')+'\n':'')+t);
