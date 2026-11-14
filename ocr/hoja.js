@@ -7,7 +7,7 @@ const nrm=s=>String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toUpperCase()
 const FILAS=[
  [/^HORA\b/,'hora'],[/^FRE\.?\s*CARD/,'fc'],[/^PA\s*SIST/,'pa'],[/^PAM\b/,'pam'],[/^F\.?\s*RESP/,'fr'],
  [/^T\.?\s*AXIL/,'t'],[/^T\.?\s*CENTR/,'tc'],[/^PVC\b/,'x'],[/^PAP\s*SIST/,'x'],[/^PAP\.?\s*MED/,'x'],[/^PCP\b/,'x'],[/^GC\s*\/?\s*I/,'x'],[/^RVS/,'x'],
- [/^MRO\b|MMV.?BIO/,'o2'],[/^F[I1L]O\s*2$|^FIO2/,'fio2'],[/^SAT\s*[O0]\s*2/,'sat'],[/^GCS/,'gcs'],[/^EVA/,'eva'],[/^HGT$/,'hgt'],[/^DOSIS/,'x'],
+ [/^MRO\b|MMV.?BIO/,'o2'],[/^F[I1L]O\s*2$|^FIO2/,'fio2'],[/^SAT\s*[O0]\s*2/,'sat'],[/^GCS/,'gcs'],[/^EVA/,'eva'],[/^HGT$/,'hgt'],[/^PESO\b/,'peso'],[/^DOSIS/,'x'],
  [/^AGUA\s*SONDA/,'oral'],[/^AGUA\s*END/,'x'],[/^TOTAL\s*INGRESO/,'ting'],[/^DIURESIS/,'diu'],[/^DEPOSICION/,'dep'],[/^SNG/,'x'],[/^DRENAJE/,'x'],[/^PERDIDAS/,'x'],[/^TOTAL\s*EGRESO/,'teg'],[/^TOTAL$/,'tot']];
 function geo(o){const xs=o.box.map(p=>p[0]),ys=o.box.map(p=>p[1]);return {x0:Math.min(...xs),x1:Math.max(...xs),y0:Math.min(...ys),y1:Math.max(...ys),xc:(Math.min(...xs)+Math.max(...xs))/2,yc:(Math.min(...ys)+Math.max(...ys))/2}}
 function filaDe(t){const u=nrm(t).trim();for(const [re,k] of FILAS)if(re.test(u))return k;return null}
@@ -31,6 +31,7 @@ const LEE={
  sat(t){const d=dig(t);if(/^100/.test(d))return {v:100,d:false};const v=+d.slice(0,2);return d.length>=2&&v>=60&&v<=99?{v,d:false}:null},
  eva(t){const u=t.trim();if(/^[0oO°()]+\.?$/.test(u))return {v:0,d:false};const d=dig(u);if(d&&+d<=10)return {v:+d,d:false};return null},
  gcs(t){const d=dig(t);if(d&&+d>=3&&+d<=15)return {v:+d,d:false};return null},
+ peso(t){const m=String(t).match(/(\d{2,3})(?:\s*[.,]\s*(\d))?/);if(!m)return null;const v=+(m[1]+(m[2]?'.'+m[2]:''));return v>=25&&v<=250?{v,d:false}:null},
  hgt(t){const d=dig(t);const v=+d.slice(0,3);return d&&v>=30&&v<=600?{v,d:false}:null},
  diu(t){const d=dig(t);return d&&+d>0&&+d<=5000?{v:+d,d:false}:null},
  oral(t){return LEE.diu(t)},ting(t){return LEE.diu(t)},teg(t){return LEE.diu(t)},
@@ -64,7 +65,7 @@ function hojaSV(items){
   if(asg.hora)c.hora=LEE.hora(asg.hora.v.text);
   const raw=k=>asg[k]?asg[k].v.text:null;
   const pam=asg.pam?LEE.pam(asg.pam.v.text):null;
-  ['fc','pam','fr','t','tc','fio2','sat','eva','gcs','hgt','diu','dep','oral'].forEach(k=>{if(!asg[k])return;const r=LEE[k](asg[k].v.text,{});c.f[k]={raw:raw(k),v:r&&!asg[k].tall?r.v:null,d:!r||r.d||asg[k].tall||asg[k].v.score<0.8,box:asg[k].v.box}});
+  ['fc','pam','fr','t','tc','fio2','sat','eva','gcs','hgt','peso','diu','dep','oral'].forEach(k=>{if(!asg[k])return;const r=LEE[k](asg[k].v.text,{});c.f[k]={raw:raw(k),v:r&&!asg[k].tall?r.v:null,d:!r||r.d||asg[k].tall||asg[k].v.score<0.8,box:asg[k].v.box}});
   if(asg.pa){const r=LEE.pa(asg.pa.v.text,{pam:pam&&!pam.d?pam.v:null});c.f.pa={raw:raw('pa'),v:r?r.v:null,d:!r||r.d||asg.pa.v.score<0.8,box:asg.pa.v.box}}
   if(c.f.tc&&!c.f.t){c.f.t=c.f.tc}delete c.f.tc;
   if(!c.f.t&&asg.fr){const r=LEE.t(asg.fr.v.text);if(r){c.f.t={raw:asg.fr.v.text,v:r.v,d:true,nota:'escrita en la fila de FR',box:asg.fr.v.box};delete c.f.fr}}

@@ -20,7 +20,7 @@ const nrm=s=>String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toUpperCase()
 const FILAS=[
  [/^HORA\b/,'hora'],[/^FRE\.?\s*CARD/,'fc'],[/^PA\s*SIST/,'pa'],[/^PAM\b/,'pam'],[/^F\.?\s*RESP/,'fr'],
  [/^T\.?\s*AXIL/,'t'],[/^T\.?\s*CENTR/,'tc'],[/^PVC\b/,'x'],[/^PAP\s*SIST/,'x'],[/^PAP\.?\s*MED/,'x'],[/^PCP\b/,'x'],[/^GC\s*\/?\s*I/,'x'],[/^RVS/,'x'],
- [/^MRO\b|MMV.?BIO/,'o2'],[/^F[I1L]O\s*2$|^FIO2/,'fio2'],[/^SAT\s*[O0]\s*2/,'sat'],[/^GCS/,'gcs'],[/^EVA/,'eva'],[/^HGT$/,'hgt'],[/^DOSIS/,'x'],
+ [/^MRO\b|MMV.?BIO/,'o2'],[/^F[I1L]O\s*2$|^FIO2/,'fio2'],[/^SAT\s*[O0]\s*2/,'sat'],[/^GCS/,'gcs'],[/^EVA/,'eva'],[/^HGT$/,'hgt'],[/^PESO\b/,'peso'],[/^DOSIS/,'x'],
  [/^AGUA\s*SONDA/,'oral'],[/^AGUA\s*END/,'x'],[/^TOTAL\s*INGRESO/,'ting'],[/^DIURESIS/,'diu'],[/^DEPOSICION/,'dep'],[/^SNG/,'x'],[/^DRENAJE/,'x'],[/^PERDIDAS/,'x'],[/^TOTAL\s*EGRESO/,'teg'],[/^TOTAL$/,'tot']];
 function geo(o){const xs=o.box.map(p=>p[0]),ys=o.box.map(p=>p[1]);return {x0:Math.min(...xs),x1:Math.max(...xs),y0:Math.min(...ys),y1:Math.max(...ys),xc:(Math.min(...xs)+Math.max(...xs))/2,yc:(Math.min(...ys)+Math.max(...ys))/2}}
 function filaDe(t){const u=nrm(t).trim();for(const [re,k] of FILAS)if(re.test(u))return k;return null}
@@ -44,6 +44,7 @@ const LEE={
  sat(t){const d=dig(t);if(/^100/.test(d))return {v:100,d:false};const v=+d.slice(0,2);return d.length>=2&&v>=60&&v<=99?{v,d:false}:null},
  eva(t){const u=t.trim();if(/^[0oO°()]+\.?$/.test(u))return {v:0,d:false};const d=dig(u);if(d&&+d<=10)return {v:+d,d:false};return null},
  gcs(t){const d=dig(t);if(d&&+d>=3&&+d<=15)return {v:+d,d:false};return null},
+ peso(t){const m=String(t).match(/(\d{2,3})(?:\s*[.,]\s*(\d))?/);if(!m)return null;const v=+(m[1]+(m[2]?'.'+m[2]:''));return v>=25&&v<=250?{v,d:false}:null},
  hgt(t){const d=dig(t);const v=+d.slice(0,3);return d&&v>=30&&v<=600?{v,d:false}:null},
  diu(t){const d=dig(t);return d&&+d>0&&+d<=5000?{v:+d,d:false}:null},
  oral(t){return LEE.diu(t)},ting(t){return LEE.diu(t)},teg(t){return LEE.diu(t)},
@@ -77,7 +78,7 @@ function hojaSV(items){
   if(asg.hora)c.hora=LEE.hora(asg.hora.v.text);
   const raw=k=>asg[k]?asg[k].v.text:null;
   const pam=asg.pam?LEE.pam(asg.pam.v.text):null;
-  ['fc','pam','fr','t','tc','fio2','sat','eva','gcs','hgt','diu','dep','oral'].forEach(k=>{if(!asg[k])return;const r=LEE[k](asg[k].v.text,{});c.f[k]={raw:raw(k),v:r&&!asg[k].tall?r.v:null,d:!r||r.d||asg[k].tall||asg[k].v.score<0.8,box:asg[k].v.box}});
+  ['fc','pam','fr','t','tc','fio2','sat','eva','gcs','hgt','peso','diu','dep','oral'].forEach(k=>{if(!asg[k])return;const r=LEE[k](asg[k].v.text,{});c.f[k]={raw:raw(k),v:r&&!asg[k].tall?r.v:null,d:!r||r.d||asg[k].tall||asg[k].v.score<0.8,box:asg[k].v.box}});
   if(asg.pa){const r=LEE.pa(asg.pa.v.text,{pam:pam&&!pam.d?pam.v:null});c.f.pa={raw:raw('pa'),v:r?r.v:null,d:!r||r.d||asg.pa.v.score<0.8,box:asg.pa.v.box}}
   if(c.f.tc&&!c.f.t){c.f.t=c.f.tc}delete c.f.tc;
   if(!c.f.t&&asg.fr){const r=LEE.t(asg.fr.v.text);if(r){c.f.t={raw:asg.fr.v.text,v:r.v,d:true,nota:'escrita en la fila de FR',box:asg.fr.v.box};delete c.f.fr}}
@@ -475,7 +476,7 @@ root.HematoLote=api;if(typeof module!=='undefined')module.exports=api;
 })(typeof window!=='undefined'?window:globalThis);
 
 </script>
-<title>Hematología Intensiva HGGB · v21</title>
+<title>Hematología Intensiva HGGB · v22</title>
 <script>/**
  * @licstart The following is the entire license notice for the
  * JavaScript code in this page
@@ -593,7 +594,7 @@ body.touch .mono{font-size:14px}
 <body>
 <div class="app">
 <div class="hdr">
-  <div><b>Hematología Intensiva · HGGB</b><br><small>Evolución e ingreso · v21 · funciona sin internet</small></div>
+  <div><b>Hematología Intensiva · HGGB</b><br><small>Evolución e ingreso · v22 · funciona sin internet</small></div>
   <div style="font-size:11px"><select class="modosel" onchange="setModo(this.value)"><option value="full">Planes e indicaciones: completos</option><option value="short">Planes e indicaciones: acortados (FDS / festivo)</option></select> <span id="modo-auto" style="opacity:.7"></span></div>
   <div class="nav">
     <button class="nb prim" id="nav-lote" onclick="go('lote')">⬆ Cargar todo</button>
@@ -3752,38 +3753,7 @@ function fotoRecorte(box){if(!box||!fotoR)return '';const cv=fotoR.cv;const xs=b
  const m=6,x0=Math.max(0,Math.min(...xs)-m),y0=Math.max(0,Math.min(...ys)-m),x1=Math.min(cv.width,Math.max(...xs)+m),y1=Math.min(cv.height,Math.max(...ys)+m);
  const c=document.createElement('canvas');const h=Math.max(1,y1-y0),w=Math.max(1,x1-x0),k=Math.min(2,68/h);c.width=Math.round(w*k);c.height=Math.round(h*k);
  c.getContext('2d').drawImage(cv,x0,y0,w,h,0,0,c.width,c.height);return `<img src="${c.toDataURL('image/jpeg',0.85)}" alt="">`}
-const FOTO_SV=[['fc','FC'],['pa','PA'],['pam','PAM'],['fr','FR'],['t','T°'],['fio2','FiO₂'],['sat','SatO₂'],['eva','EVA']];
-function fotoRender(){const b=$('foto-panel'),{I}=fotoR;let h='<div class="fp">';
- if(I.sv){const cols=I.sv;if(fotoR.col==null){let k=cols.length-1;while(k>0&&Object.values(cols[k].f).filter(f=>f.v!=null).length<3)k--;fotoR.col=k}
-  const c=cols[fotoR.col];
-  h+=`<div class="row" style="margin:0 0 4px"><b>Signos vitales · columna</b><span class="chips">${cols.map((x,i)=>`<button class="${i===fotoR.col?'on':''}" onclick="fotoR.col=${i};fotoRender()">${x.hora?x.hora+':00':'Col. '+(i+1)}</button>`).join('')}</span></div><table>`;
-  FOTO_SV.forEach(([k,l])=>{const f=c.f[k];if(k==='eva'&&!f)return;const v=f&&f.v!=null?(k==='t'?String(f.v).replace('.',','):f.v):'';const dud=!f||f.v==null||f.d;
-   h+=`<tr class="${dud?'dud':''}"><td><b>${l}</b></td><td>${f&&f.box?fotoRecorte(f.box):'<span class="note">no leído</span>'}</td><td><input type="text" id="fsv_${k}" value="${esc(v)}" style="width:6em" inputmode="decimal"></td><td class="note">${f?esc([f.nota,f.d&&f.v!=null?'revisar':'',f.raw?'leído: «'+f.raw+'»':''].filter(Boolean).join(' · ')):''}</td></tr>`});
-  h+='</table>';
-  const D=[];cols.forEach(x=>{if(x.f.diu&&x.f.diu.v!=null)D.push({...x.f.diu,hora:x.hora})});
-  if(D.length){h+=`<div class="sub" style="margin-top:6px">Diuresis parcial (van a los casilleros de diuresis, en orden)</div><table>`;
-   D.forEach((f,i)=>{h+=`<tr class="${f.d?'dud':''}"><td>${f.hora?f.hora+':00':''}</td><td>${fotoRecorte(f.box)}</td><td><input type="text" id="fdiu_${i}" value="${f.v}" style="width:6em" inputmode="numeric"> mL</td><td></td></tr>`});h+='</table>'}
-  fotoR.nD=D.length}
- if(I.bh.length){const n12=I.bh.filter(x=>!x.h24).length;let i12=0;
-  h+=`<div class="sub" style="margin-top:6px">Balance hídrico${I.bh.some(x=>x.cuadra)?' · <span style="color:var(--gr)">los BH de 12 h suman el de 24 h ✓</span>':''}${I.bh.some(x=>x.noCuadra)?' · <span style="color:var(--rd)">no cuadran entre sí: revisar</span>':''}</div><table>`;
-  I.bh.forEach((x,i)=>{const dest=x.h24?'bh24':(i12++===0?'bh1':'bh2');const dud=x.d||x.dudaSigno||x.noCuadra;
-   h+=`<tr class="${dud?'dud':''}"><td>${fotoRecorte(x.box)}</td><td><select id="fbhs_${i}"><option value="">signo?</option><option value="+"${x.signo==='+'&&!x.dudaSigno?' selected':''}>(+)</option><option value="-"${x.signo==='-'&&!x.dudaSigno?' selected':''}>(−)</option></select> <input type="text" id="fbhv_${i}" value="${x.v}" style="width:5.5em" inputmode="numeric"></td>
-    <td><select id="fbhd_${i}"><option value="">no usar</option><option value="bh1"${dest==='bh1'?' selected':''}>BH 12 h (1)</option><option value="bh2"${dest==='bh2'?' selected':''}>BH 12 h (2)</option><option value="bh24"${dest==='bh24'?' selected':''}>BH 24 h</option></select></td>
-    <td class="note">${esc([x.dudaSigno?'signo no leído: elígelo':'',x.largo?'número largo: revisar':'','leído: «'+x.raw+'»'].filter(Boolean).join(' · '))}</td></tr>`});h+='</table>'}
- h+=`<div class="row" style="margin-top:6px"><button class="btn gr sm" onclick="fotoAplicar()">Aplicar a la hoja</button><button class="btn sec sm" onclick="fotoDescartar()">Descartar</button><span class="note">Se escriben solo los casilleros con valor. Amarillo = revisar con el recorte.</span></div></div>`;
- b.innerHTML=h;b.style.display=''}
 function fotoSet(k,v){const e=el(k);if(!e)return;e.value=v;e.dispatchEvent(new Event('input',{bubbles:true}))}
-function fotoAplicar(){if(!fotoR)return;const {I}=fotoR;const hecho=[];
- if(I.bh.length){for(let i=0;i<I.bh.length;i++){const d=$('fbhd_'+i).value,v=$('fbhv_'+i).value.trim();if(d&&v&&!$('fbhs_'+i).value){alert('Falta elegir el signo de un BH (fila '+(i+1)+').');return}}}
- if(I.sv){const g=k=>{const e=$('fsv_'+k);return e?e.value.trim():''};
-  if(g('fc'))fotoSet('sv_fc',g('fc'));
-  const pa=g('pa').match(/(\d{2,3})\s*\/\s*(\d{2,3})/);if(pa){fotoSet('sv_pas',pa[1]);fotoSet('sv_pad',pa[2])}
-  if(g('pam'))fotoSet('sv_pam',g('pam'));if(g('fr'))fotoSet('sv_fr',g('fr'));if(g('t'))fotoSet('sv_t',g('t').replace('.',','));
-  if(g('fio2'))fotoSet('sv_fio2',g('fio2'));if(g('sat'))fotoSet('sv_sat',g('sat'));
-  ['fc','pa','pam','fr','t','fio2','sat'].forEach(k=>{if(g(k))hecho.push(k.toUpperCase())});
-  if(fotoR.nD){let j=1;for(let i=0;i<fotoR.nD;i++){const v=$('fdiu_'+i).value.trim();if(!v)continue;while(j<=6&&V('d'+j))j++;if(j>6)break;fotoSet('d'+j,v);j++}hecho.push('diuresis')}}
- I.bh.forEach((x,i)=>{const d=$('fbhd_'+i).value,v=$('fbhv_'+i).value.trim(),s=$('fbhs_'+i).value;if(!d||!v)return;fotoSet(d,(s==='-'?'-':'')+v.replace(/\D/g,''));hecho.push(d==='bh24'?'BH 24 h':'BH 12 h')});
- schedSave();fotoDescartar();fotoEstado(hecho.length?'Aplicado: '+[...new Set(hecho)].join(', ')+'.':'No había valores para aplicar.')}
 function fotoDescartar(){fotoR=null;$('foto-panel').innerHTML='';$('foto-panel').style.display='none'}
 document.addEventListener('paste',e=>{if(!$('scr-hoja')||!$('scr-hoja').classList.contains('vis'))return;const it=[...((e.clipboardData||{}).items||[])].find(x=>x.type&&x.type.startsWith('image/'));if(!it)return;e.preventDefault();
  if(location.protocol==='file:'){alert('La lectura de fotos funciona en la app publicada (johnthebullbullet.github.io/hemato).');return}fotoProcesar(it.getAsFile())});
@@ -4071,6 +4041,51 @@ function renderAyuda(){const b=$('ayuda');if(!b||!cur.pid||cur.mode!=='evo'){if(
  if(!L.length){b.innerHTML='';b.closest('.sec').style.display='none';return}b.closest('.sec').style.display='';
  b.innerHTML=L.sort((a,c)=>(a.g==='urg'?0:1)-(c.g==='urg'?0:1)).map(x=>`<div class="am ${x.g}">${esc(x.t)}${x.k_slt?' <button class="btn sm" onclick="agregarDx(\'k_slt\');renderAyuda()">Agregar a diagnósticos</button>':''}</div>`).join('')}
 function refrescarF5(){try{renderTend();renderNews();renderAyuda()}catch(e){console.warn(e)}}
+
+// ═══ FOTO: hoja del día anterior (24 h: diuresis y BH) vs hoja de hoy (signos vitales y peso) ═══
+function fotoClasificar(I){if(!I.sv)return I.bh.length?'bh':'hoy';
+ const conDatos=I.sv.filter(c=>Object.values(c.f).filter(f=>f.v!=null).length>=2).length,horas=new Set(I.sv.map(c=>c.hora).filter(Boolean));
+ const noche=['20','24','04'].some(h=>horas.has(h)),h24=I.bh.some(x=>x.h24);
+ return (conDatos>=5||h24||(noche&&conDatos>=3))?'ayer':'hoy'}
+const FOTO_SV=[['fc','FC'],['pa','PA'],['pam','PAM'],['fr','FR'],['t','T°'],['fio2','FiO₂'],['sat','SatO₂'],['eva','EVA'],['peso','Peso']];
+function fotoModo(m){fotoR.modo=m;fotoRender()}
+function fotoRender(){const b=$('foto-panel'),{I}=fotoR;if(!fotoR.modo)fotoR.modo=fotoClasificar(I);const M=fotoR.modo;let h='<div class="fp">';
+ const etq={ayer:'<b>Hoja del día anterior (24 h)</b>: se usan diuresis y BH; sus signos vitales no.',hoy:'<b>Hoja de hoy</b>: se usan signos vitales y peso de la última medición; la diuresis del día aún no se usa.',bh:'<b>Balance hídrico</b>'}[M];
+ h+=`<div class="row" style="margin:0 0 6px;background:var(--ac2);padding:4px 8px;border-radius:4px"><span style="flex:1">${etq}</span>${M!=='bh'?`<button class="btn sec sm" onclick="fotoModo('${M==='ayer'?'hoy':'ayer'}')">${M==='ayer'?'No: es de hoy':'No: es del día anterior'}</button>`:''}</div>`;
+ fotoR.nD=0;fotoR.svOn=false;
+ if(I.sv&&M==='hoy'){const cols=I.sv;if(fotoR.col==null){let k=cols.length-1;while(k>0&&Object.values(cols[k].f).filter(f=>f.v!=null).length<2)k--;fotoR.col=k}
+  const c=cols[fotoR.col];fotoR.svOn=true;
+  h+=`<div class="row" style="margin:0 0 4px"><b>Signos vitales · columna</b><span class="chips">${cols.map((x,i)=>`<button class="${i===fotoR.col?'on':''}" onclick="fotoR.col=${i};fotoRender()">${x.hora?x.hora+':00':'Col. '+(i+1)}</button>`).join('')}</span><span class="note">por defecto la última con datos</span></div><table>`;
+  FOTO_SV.forEach(([k,l])=>{const f=c.f[k];if((k==='eva'||k==='peso')&&!f)return;const v=f&&f.v!=null?((k==='t'||k==='peso')?String(f.v).replace('.',','):f.v):'';const dud=!f||f.v==null||f.d;
+   h+=`<tr class="${dud?'dud':''}"><td><b>${l}</b></td><td>${f&&f.box?fotoRecorte(f.box):'<span class="note">no leído</span>'}</td><td><input type="text" id="fsv_${k}" value="${esc(v)}" style="width:6em" inputmode="decimal"></td><td class="note">${f?esc([f.nota,f.d&&f.v!=null?'revisar':'',f.raw?'leído: «'+f.raw+'»':''].filter(Boolean).join(' · ')):''}</td></tr>`});
+  h+='</table>'}
+ if(I.sv&&M==='ayer'){const D=[];I.sv.forEach(x=>{if(x.f.diu&&x.f.diu.v!=null)D.push({...x.f.diu,hora:x.hora})});const hayHora=D.some(x=>x.hora);
+  if(D.length){fotoR.D=D;fotoR.nD=D.length;h+=`<div class="sub" style="margin-top:6px">Diuresis parcial de las 24 h <span class="note">(se reemplazan los casilleros de diuresis; desmarca las columnas de totales si aparecen)</span></div><table>`;
+   D.forEach((f,i)=>{const on=f.hora||!hayHora;h+=`<tr class="${f.d?'dud':''}"><td><input type="checkbox" id="fdiuc_${i}" ${on?'checked':''} onchange="fotoSumaDiu()"> ${f.hora?f.hora+':00':'sin hora'}</td><td>${fotoRecorte(f.box)}</td><td><input type="text" id="fdiu_${i}" value="${f.v}" style="width:6em" inputmode="numeric" oninput="fotoSumaDiu()"> mL</td><td></td></tr>`});
+   h+=`<tr><td colspan="4"><b>Total: <span id="fdiu_tot"></span> mL/24h</b></td></tr></table>`}
+  else h+='<div class="note">No encontré diuresis parcial en esta hoja.</div>'}
+ if(I.bh.length&&M!=='hoy'){let i12=0;
+  h+=`<div class="sub" style="margin-top:6px">Balance hídrico${I.bh.some(x=>x.cuadra)?' · <span style="color:var(--gr)">los BH de 12 h suman el de 24 h ✓</span>':''}${I.bh.some(x=>x.noCuadra)?' · <span style="color:var(--rd)">no cuadran entre sí: revisar</span>':''}</div><table>`;
+  I.bh.forEach((x,i)=>{const dest=x.h24?'bh24':(i12++===0?'bh1':'bh2');const dud=x.d||x.dudaSigno||x.noCuadra;
+   h+=`<tr class="${dud?'dud':''}"><td>${fotoRecorte(x.box)}</td><td><select id="fbhs_${i}"><option value="">signo?</option><option value="+"${x.signo==='+'&&!x.dudaSigno?' selected':''}>(+)</option><option value="-"${x.signo==='-'&&!x.dudaSigno?' selected':''}>(−)</option></select> <input type="text" id="fbhv_${i}" value="${x.v}" style="width:5.5em" inputmode="numeric"></td>
+    <td><select id="fbhd_${i}"><option value="">no usar</option><option value="bh1"${dest==='bh1'?' selected':''}>BH 12 h (1)</option><option value="bh2"${dest==='bh2'?' selected':''}>BH 12 h (2)</option><option value="bh24"${dest==='bh24'?' selected':''}>BH 24 h</option></select></td>
+    <td class="note">${esc([x.dudaSigno?'signo no leído: elígelo':'',x.largo?'número largo: revisar':'','leído: «'+x.raw+'»'].filter(Boolean).join(' · '))}</td></tr>`});h+='</table>'}
+ h+=`<div class="row" style="margin-top:6px"><button class="btn gr sm" onclick="fotoAplicar()">Aplicar a la hoja</button><button class="btn sec sm" onclick="fotoDescartar()">Descartar</button><span class="note">Se escriben solo los casilleros con valor. Amarillo = revisar con el recorte.</span></div></div>`;
+ b.innerHTML=h;b.style.display='';fotoSumaDiu()}
+function fotoDiuSel(){const out=[];for(let i=0;i<(fotoR.nD||0);i++){const c=$('fdiuc_'+i),v=num($('fdiu_'+i).value);if(c&&c.checked&&v)out.push({v,hora:fotoR.D[i].hora})}return out}
+function fotoSumaDiu(){const e=$('fdiu_tot');if(!e)return;e.textContent=fmtN(fotoDiuSel().reduce((a,x)=>a+x.v,0))}
+function fotoAplicar(){if(!fotoR)return;const {I}=fotoR,M=fotoR.modo;const hecho=[];
+ if(M!=='hoy'&&I.bh.length){for(let i=0;i<I.bh.length;i++){const d=$('fbhd_'+i).value,v=$('fbhv_'+i).value.trim();if(d&&v&&!$('fbhs_'+i).value){alert('Falta elegir el signo de un BH (fila '+(i+1)+').');return}}}
+ if(fotoR.svOn){const g=k=>{const e=$('fsv_'+k);return e?e.value.trim():''};
+  if(g('fc'))fotoSet('sv_fc',g('fc'));const pa=g('pa').match(/(\d{2,3})\s*\/\s*(\d{2,3})/);if(pa){fotoSet('sv_pas',pa[1]);fotoSet('sv_pad',pa[2])}
+  if(g('pam'))fotoSet('sv_pam',g('pam'));if(g('fr'))fotoSet('sv_fr',g('fr'));if(g('t'))fotoSet('sv_t',g('t').replace('.',','));
+  if(g('fio2'))fotoSet('sv_fio2',g('fio2'));if(g('sat'))fotoSet('sv_sat',g('sat'));if(g('peso'))fotoSet('sv_peso',g('peso').replace('.',','));
+  ['fc','pa','pam','fr','t','fio2','sat','peso'].forEach(k=>{if(g(k))hecho.push(k==='peso'?'peso':k.toUpperCase())})}
+ if(M==='ayer'&&fotoR.nD){const S=fotoDiuSel();if(S.length){for(let j=1;j<=6;j++)fotoSet('d'+j,'');
+   let vals=S.map(x=>x.v);if(vals.length>6){const dia=S.filter(x=>x.hora&&+x.hora>=7&&+x.hora<20).reduce((a,x)=>a+x.v,0),noche=S.reduce((a,x)=>a+x.v,0)-dia;vals=[dia,noche].filter(Boolean)}
+   vals.forEach((v,i)=>fotoSet('d'+(i+1),String(v)));hecho.push('diuresis 24 h')}}
+ if(M!=='hoy')I.bh.forEach((x,i)=>{const d=$('fbhd_'+i).value,v=$('fbhv_'+i).value.trim(),s=$('fbhs_'+i).value;if(!d||!v)return;fotoSet(d,(s==='-'?'-':'')+v.replace(/\D/g,''));hecho.push(d==='bh24'?'BH 24 h':'BH 12 h')});
+ schedSave();fotoDescartar();fotoEstado(hecho.length?'Aplicado: '+[...new Set(hecho)].join(', ')+'.':'No había valores para aplicar.')}
 
 document.addEventListener('click',e=>{const m=$('mas');if(m&&!m.contains(e.target))m.classList.remove('ab')});
 document.addEventListener('click',e=>{if(e.target.closest&&e.target.closest('.mas .menu button'))$('mas').classList.remove('ab')});
