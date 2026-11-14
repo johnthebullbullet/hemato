@@ -476,7 +476,7 @@ root.HematoLote=api;if(typeof module!=='undefined')module.exports=api;
 })(typeof window!=='undefined'?window:globalThis);
 
 </script>
-<title>Hematología Intensiva HGGB · v23</title>
+<title>Hematología Intensiva HGGB · v24</title>
 <script>/**
  * @licstart The following is the entire license notice for the
  * JavaScript code in this page
@@ -594,7 +594,7 @@ body.touch .mono{font-size:14px}
 <body>
 <div class="app">
 <div class="hdr">
-  <div><b>Hematología Intensiva · HGGB</b><br><small>Evolución e ingreso · v23 · funciona sin internet</small></div>
+  <div><b>Hematología Intensiva · HGGB</b><br><small>Evolución e ingreso · v24 · funciona sin internet</small></div>
   <div style="font-size:11px"><select class="modosel" onchange="setModo(this.value)"><option value="full">Planes e indicaciones: completos</option><option value="short">Planes e indicaciones: acortados (FDS / festivo)</option></select> <span id="modo-auto" style="opacity:.7"></span></div>
   <div class="nav">
     <button class="nb prim" id="nav-lote" onclick="go('lote')">⬆ Cargar todo</button>
@@ -608,13 +608,14 @@ body.touch .mono{font-size:14px}
 <!-- ═══ CARGAR TODO ═══ -->
 <div class="scr" id="scr-lote">
   <h2>Cargar todo</h2>
-  <div class="note">Evoluciones del SIRyC (PDF con texto o escaneado), entrega de turno (Excel), PDF de exámenes, pantallazos, fotos de la hoja de enfermería, .docx o .txt, todo junto. Cada archivo se reconoce por su contenido y se asocia al paciente por RUT, nombre (solo huellas cifradas) o cama + iniciales. Un archivo con problemas no detiene a los demás.</div>
+  <div class="note">Evoluciones del SIRyC (PDF con texto o escaneado), entrega de turno (Excel), PDF de exámenes, pantallazos, fotos de la hoja de enfermería, .docx o .txt, todo junto. Cada archivo se reconoce por su contenido y se asocia al paciente por RUT, nombre (solo huellas cifradas) o cama + iniciales. Al tocar el botón se lee todo, se asigna a cada paciente y se genera la evolución de hoy, sin más pasos. Lo que no se pueda asignar queda agrupado abajo para elegir el paciente. Un archivo con problemas no detiene a los demás.</div>
+  <div class="note" id="l-file" style="display:none;color:var(--rd);font-weight:600">Abriste la app como archivo descargado: así no se pueden leer fotos ni PDF escaneados. Para eso usa la app publicada: <a href="https://johnthebullbullet.github.io/hemato/">johnthebullbullet.github.io/hemato</a></div>
   <div class="drop" id="ldrop">Arrastra aquí o toca para elegir archivos (varios a la vez)</div>
   <div class="flist" id="lfiles"></div>
   <div class="sub">Texto pegado (controles CMR, comentarios de la entrega, notas sin encabezado)</div>
   <div id="lpastes"></div>
   <div class="row"><button class="btn sec sm" onclick="lAddPaste()">+ Agregar otro texto</button><b style="font-size:11.5px;margin-left:10px">Fecha de los textos sin fecha</b><input type="date" id="l-fpeg"></div>
-  <div class="row" style="margin-top:8px"><button class="btn" id="lgo" onclick="lProcesar()">Procesar</button><button class="btn sec" onclick="lLimpiar()">Limpiar</button><span class="note" id="lst"></span></div>
+  <div class="row" style="margin-top:8px"><button class="btn" id="lgo" onclick="lProcesar()" style="background:#e0a800;color:#000;font-weight:700">Cargar y generar evoluciones</button><button class="btn sec" onclick="lLimpiar()">Limpiar</button><span class="note" id="lst"></span></div>
   <div id="lres"></div>
   <details style="margin-top:10px"><summary class="note" style="cursor:pointer">Tus reglas aprendidas</summary><div id="reglas"></div></details>
 </div>
@@ -3302,7 +3303,7 @@ function renderHoja(){const p=P();$('sheet').className=cur.mode==='evo'?'mode-ev
  if(!V('ex_txt'))fillLabs(false);
  const ci=$('counters');ci.innerHTML=changes.length?'<b>Contadores actualizados (revisar):</b> '+changes.map(esc).join(' · '):'';ci.classList.toggle('vis',changes.length>0);
  $('alerts').classList.remove('vis');$('saved').textContent='';go('hoja');renderImp();paintCopiado();refrescarF5();if(!fotoR)fotoEstado('');
- if(fotoPend[cur.pid]&&typeof fotoRender==='function'){fotoR={I:fotoPend[cur.pid].I,cv:fotoPend[cur.pid].cv,col:null};delete fotoPend[cur.pid];fotoRender();fotoEstado('Foto cargada en lote: revisa y aplica.')}}
+ if(fotoPend[cur.pid]&&typeof fotoRender==='function'){const fp=fotoPend[cur.pid];fotoR={I:fp.I,cv:fp.cv,col:null,modo:fp.modo};delete fotoPend[cur.pid];fotoRender();fotoEstado(fp.auto?'Valores de la foto ya aplicados al cargar ('+fp.auto+'). Compáralos con los recortes; si corriges alguno, toca Aplicar.':'Foto cargada en lote: revisa y aplica.')}}
 
 // ═══ CONTADORES ═══
 function incCounters(text,n,esInd){const ch=[];let t=text;
@@ -3745,7 +3746,7 @@ const LT=HematoLote;let lFiles=[],lPastes=[],lRes=null,fotoPend={};
 function lInit(){const d=$('ldrop');if(!d||d.dataset.ok)return;d.dataset.ok=1;
  d.onclick=()=>{const i=document.createElement('input');i.type='file';i.multiple=true;i.accept='.pdf,.txt,.docx,.xlsx,image/*';i.onchange=()=>lAddFiles(i.files);i.click()};
  d.ondragover=e=>{e.preventDefault();d.classList.add('act')};d.ondragleave=()=>d.classList.remove('act');d.ondrop=e=>{e.preventDefault();d.classList.remove('act');lAddFiles(e.dataTransfer.files)};
- if(!$('l-fpeg').value)$('l-fpeg').value=ayerISO();if(!lPastes.length)lAddPaste();lRender()}
+ if(location.protocol==='file:'&&$('l-file'))$('l-file').style.display=''; if(!$('l-fpeg').value)$('l-fpeg').value=ayerISO();if(!lPastes.length)lAddPaste();lRender()}
 async function lAddFiles(fl){for(const f of fl){if(lFiles.length>=80)break;const x={name:f.name,type:f.type,file:f};lFiles.push(x);
   if(/\.xlsx$/i.test(f.name)){try{x.hojas=await LT.xlsxHojas(await f.arrayBuffer());x.hoja=LT.hojaDelDia(x.hojas,todayISO())}catch(e){x.err=e.message}}}lRender()}
 function lAddPaste(){lPastes.push({cama:'',texto:''});lRender()}
@@ -3771,10 +3772,14 @@ async function docTexto(f,estado){const name=f.name||'archivo';const buf=await f
   return {texto:partes.join('\n\n'),ocr:true,buf}}
  if(/^image\//.test(f.type)||/\.(png|jpe?g|heic|webp)$/i.test(name)){if(location.protocol==='file:')throw new Error('las imágenes se leen en la app publicada');
   const bm=await fotoBitmap(f);estado&&estado(`${name}: leyendo imagen…`);const r=await fotoMejorLectura(bm,t=>estado&&estado(name+': '+t));
-  if(r.I.sv||r.I.bh.length){return {hoja:{I:r.I,cv:r.cv},ocr:true}}
+  if(r.I.sv||r.I.bh.length){let cab={};try{cab=cabFoto(await lineasOCR(r.items||r.items0||[]))}catch(e){}return {hoja:{I:r.I,cv:r.cv},cab,ocr:true}}
   return {texto:await lineasOCR(r.items0||[]),ocr:true}}
  if(/\.docx$/i.test(name))return {texto:await docxTexto(buf)};
  return {texto:new TextDecoder('utf-8').decode(buf)}}
+// encabezado impreso de la hoja (INDICACIONES MÉDICAS): SALA / CAMA / PACIENTE / RUT; la fecha escrita no se usa
+function cabFoto(t){const c={};let m=t.match(/SALA\s*[:;.]?\s*(\d{1,2})\s*[,;.]?\s*CAMA\s*[:;.]?\s*(\d)/i);if(m)c.cama=(+m[1])+'-'+m[2];
+ m=t.match(/PACIENTE\s*[:;.]?\s*([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑa-záéíóúñ ]{4,60}?)\s*(?=SALA|EDAD|RUT|N[°º]|\n|$)/);if(m&&m[1].trim().split(/\s+/).length>=2)c.nombre=m[1].trim();
+ m=t.match(/RU[TN]\s*[:;.]?\s*(\d{1,2}\.?\d{3}\.?\d{3}\s*-?\s*[\dkK])/i);if(m)c.run=m[1];return c}
 function esLab(t){return /HEMOGRAMA|VALOR(?:ES)?\s+DE\s+REFERENCIA|RESULTADO\s+UNIDAD|LABORATORIO CL[IÍ]NICO|N[°º]\s*DE\s*ORDEN/i.test(t)&&!/EVOLUCI[OÓ]N|DIAGN[OÓ]STICOS|PROBLEMAS Y PLANES/i.test(t)}
 // notas de un documento de evolución (un PDF puede traer varias)
 function partirDoc(texto){const L=texto.split('\n');const idx=[];L.forEach((l,i)=>{if(/^\s*Paciente\s*:?.*RUN/i.test(l))idx.push(i)});
@@ -3783,12 +3788,13 @@ function notasDeDoc(texto,fuente,orden,pegado){const brutas=pegado?LT.partirNota
  return brutas.map((b,i)=>{const cab={...cab0,...LT.cabecera(b.texto)};return {texto:limpiarSIRYC(b.texto).replace(/^Paciente:[^\n]*\n*/,''),crudo:b.texto,fecha:cab.fecha||null,hora:cab.hora||b.hora||null,cab,fuente,marca:b.marca,orden:orden*100+i}})}
 function lPacientes(){return Object.values(DB.patients).filter(p=>p.activo).map(p=>({id:p.id,cama:p.cama,nombre:p.nombre,hue:p.hue}))}
 async function lProcesar(){if(!lFiles.length&&!lPastes.some(x=>x.texto.trim())){alert('Agrega archivos o texto.');return}
- $('lgo').disabled=true;const R={pac:{},porAsociar:[],errores:[],docs:[]};const hoy=todayISO(),fpeg=$('l-fpeg').value||ayerISO();const pac=lPacientes();
+ $('lgo').disabled=true;$('lres').innerHTML='';const R={pac:{},porAsociar:[],errores:[],docs:[],grupos:[]};const hoy=todayISO(),fpeg=$('l-fpeg').value||ayerISO();const pac=lPacientes();
  const slot=pid=>R.pac[pid]=R.pac[pid]||{notas:[],labs:[],hojas:[],entrega:[],fuentes:new Set()};
  const asignar=(nota,pidFijo)=>{let a=pidFijo?{pid:pidFijo,motivo:'elegido',seguro:true}:LT.asociar(nota.cab||{},pac);
   if(a.pid&&a.seguro){slot(a.pid).notas.push(nota);slot(a.pid).fuentes.add(nota.fuente);return}
-  R.porAsociar.push({tipo:'nota',nota,sug:a.pid,motivo:a.motivo})};
+  R.porAsociar.push({tipo:'nota',nota,sug:a.pid,motivo:a.motivo,fuente:nota.fuente})};
  let k=0;
+ try{
  for(const f of lFiles){k++;lEstado(`Leyendo ${k} de ${lFiles.length}: ${f.name}`);
   try{if(/\.xlsx$/i.test(f.name)){if(f.err)throw new Error(f.err);const hj=f.hojas[f.hoja];const fh=LT.hojaFecha(hj.nombre,hoy)||fpeg;const B=LT.entregaBloques(hj.filas,hoy);
     if(!B.length)throw new Error('no encontré bloques con "SALA:" en la hoja '+hj.nombre);
@@ -3797,11 +3803,11 @@ async function lProcesar(){if(!lFiles.length&&!lPastes.some(x=>x.texto.trim())){
      if(!b.nombre&&!b.run&&!Object.keys(b.campos).length)return; // cama vacía en la planilla
      const a=LT.asociar(cab,pac);if(a.pid&&a.seguro){slot(a.pid).entrega.push(ent);slot(a.pid).fuentes.add('entrega '+hj.nombre)}else R.porAsociar.push({tipo:'entrega',ent,sug:a.pid,motivo:a.motivo,fuente:f.name})});continue}
    const d=await docTexto(f.file,lEstado);
-   if(d.hoja){R.porAsociar.push({tipo:'hoja',hoja:d.hoja,fuente:f.name,sug:null,motivo:'foto de hoja de enfermería'});R.docs.push({fuente:f.name,tipo:'hoja de enfermería',texto:''});continue}
+   if(d.hoja){const cab={cama:d.cab&&d.cab.cama||null,nombre:d.cab&&d.cab.nombre||null,run:d.cab&&d.cab.run||null};R.porAsociar.push({tipo:'hoja',hoja:d.hoja,cab,fuente:f.name,sug:null,motivo:cab.cama?'encabezado de la hoja: cama '+cab.cama:'foto sin encabezado legible'});R.docs.push({fuente:f.name,tipo:'hoja de enfermería',texto:''});continue}
    if(esLab(d.texto)){if(!d.buf)throw new Error('examen sin PDF');const r=await procesarArchivo(f.name,d.buf.slice(0));const cab=LT.cabecera(d.texto);
-    const a=LT.asociar({nombre:r.name||cab.nombre,run:cab.run},pac);const pid=a.pid&&a.seguro?a.pid:(matchPatient(r.name||'')||null);
+    const a=LT.asociar({nombre:r.name||cab.nombre,run:cab.run},pac);const pid=a.pid&&a.seguro?a.pid:null;
     R.docs.push({fuente:f.name,tipo:'examen',texto:d.texto});
-    if(pid){slot(pid).labs.push(r);slot(pid).fuentes.add(f.name)}else R.porAsociar.push({tipo:'lab',lab:r,fuente:f.name,nombre:r.name,sug:a.pid,motivo:a.motivo});continue}
+    if(pid){slot(pid).labs.push(r);slot(pid).fuentes.add(f.name)}else R.porAsociar.push({tipo:'lab',lab:r,fuente:f.name,nombre:r.name||cab.nombre,run:cab.run,sug:a.pid,motivo:a.motivo});continue}
    const notas=notasDeDoc(d.texto,f.name,k);R.docs.push({fuente:f.name,tipo:'evolución'+(d.ocr?' (leída por imagen)':''),texto:d.texto,ocr:d.ocr});
    if(!notas.length)throw new Error('sin texto reconocible');
    notas.forEach(n=>{if(!n.fecha){n.fecha=fpeg;n.sinFecha=true}asignar(n)})}
@@ -3809,28 +3815,105 @@ async function lProcesar(){if(!lFiles.length&&!lPastes.some(x=>x.texto.trim())){
  lPastes.forEach((x,i)=>{if(!x.texto.trim())return;const fuente='Texto '+(i+1);try{
   const ns=notasDeDoc(x.texto,fuente,1000+i,true);R.docs.push({fuente,tipo:'texto pegado',texto:x.texto});
   ns.forEach(n=>{if(!n.cab.fecha){n.fecha=fpeg;n.sinFecha=true}if(!n.hora)n.posterior=true;asignar(n,x.cama||null)})}catch(e){R.errores.push({fuente,error:e.message})}});
- lRes=R;$('lgo').disabled=false;lEstado(`Listo: ${Object.keys(R.pac).length} paciente(s) con datos, ${R.porAsociar.length} por asociar, ${R.errores.length} error(es). Revisa y aplica.`);lRenderRes()}
-function lRenderRes(){const R=lRes;if(!R)return;const act=Object.values(DB.patients).filter(p=>p.activo).sort((a,b)=>BEDS.indexOf(a.cama)-BEDS.indexOf(b.cama));
+ lRes=R;lEstado('Asignando a cada paciente…');
+ try{lResolver(R)}catch(e){R.errores.push({fuente:'asignación automática',error:e.message||String(e)})}
+ lEstado('Generando evoluciones…');lAplicarTodo(R);
+ const nG=Object.values(R.pac).filter(s=>s.gen==='ok').length,nS=R.grupos.length;
+ lEstado(`Listo: ${nG} evolución(es) generada(s)${nS?`, ${nS} grupo(s) de documentos sin paciente (abajo)`:''}${R.errores.length?`, ${R.errores.length} archivo(s) sin leer`:''}.`)}
+ finally{$('lgo').disabled=false;lRenderRes()}}
+function lMeter(R,pid,x){const s=R.pac[pid]=R.pac[pid]||{notas:[],labs:[],hojas:[],entrega:[],fuentes:new Set()};s.entrega=s.entrega||[];
+ if(x.tipo==='nota'){s.notas.push(x.nota);s.fuentes.add(x.nota.fuente)}else if(x.tipo==='lab'){s.labs.push(x.lab);s.fuentes.add(x.fuente)}else if(x.tipo==='hoja'){s.hojas.push(x.hoja);s.fuentes.add(x.fuente)}else if(x.tipo==='entrega'){s.entrega.push(x.ent);s.fuentes.add('entrega')}
+ s.aplicado=false;s.gen=null;return s}
+// ═══ asignación automática: agrupa lo no reconocido por identidad (RUT / nombre, en huellas) y lo resuelve con cama, entrega o iniciales ═══
+function lIdent(x){const c=x.tipo==='nota'?(x.nota.cab||{}):x.tipo==='lab'?{nombre:x.nombre,run:x.run}:x.tipo==='entrega'?(x.ent.cab||{}):(x.cab||{});
+ return {c,r:c.run?LT.huellaRut(c.run):null,t:c.nombre?LT.huellaTokens(c.nombre):[]}}
+function lMismo(a,b){if(a.r&&b.r)return a.r===b.r;if(a.t.length>=2&&b.t.length>=2&&a.t.filter(z=>b.t.includes(z)).length>=2)return true;
+ return !!(a.c.cama&&a.c.cama===b.c.cama&&a.c.nombre&&b.c.nombre&&LT.inicialesCompat(a.c.nombre,LT.iniciales(b.c.nombre)))}
+function sexoDe(textos){const t=textos.join('\n');const W='l[uú]cid|orientad|cooperad|tranquil|evaluad|hospitalizad|ingresad|neutrop[eé]nic|vigil|somnolient|estacionari|perfundid|desorientad|agitad|intubad|conectad';
+ const f=(t.match(new RegExp('\\b(femenina|la paciente|sra\\.|(?:'+W+')as?)\\b','gi'))||[]).length-(t.match(/\b(cooperadora?s?)\b/gi)||[]).filter(x=>!/a$/i.test(x)).length,m=(t.match(new RegExp('\\b(masculino|el paciente|sr\\.|(?:'+W+')os?|cooperador)\\b','gi'))||[]).length;return f>m?'f':'m'}
+function lNuevo(cama,mem,nombres){const hoy=todayISO();const ent=mem.find(x=>x.tipo==='entrega');const notas=mem.filter(x=>x.tipo==='nota').map(x=>x.nota);
+ const fi=(ent&&ent.ent.b.fingreso)||notas.map(n=>n.fecha).filter(Boolean).sort()[0]||hoy;
+ const nom=nombres.slice().sort((a,b)=>b.length-a.length)[0]||'';
+ const p={id:uid(),notes:[],labs:[],upd:Date.now(),nombre:LT.iniciales(nom)||'Paciente',sexo:sexoDe(notas.map(n=>n.texto)),fingreso:fi,falta:null,activo:true,cama,nuevoLote:1};
+ DB.patients[p.id]=p;DB.beds[cama]=p.id;return p.id}
+function lResolver(R){
+ // lo ya asignado enseña sus huellas (nombre completo de la entrega, RUT de la evolución) antes de reintentar con el resto
+ Object.entries(R.pac).forEach(([pid,s])=>{const p=DB.patients[pid];if(!p)return;s.notas.forEach(n=>aprenderHuellas(p,n.cab));(s.entrega||[]).forEach(e=>aprenderHuellas(p,e.cab))});
+ const X=R.porAsociar.filter(x=>!x.hecho);R.grupos=[];if(!X.length)return;const pac=lPacientes();const H=X.map(lIdent);
+ const anc=[];Object.entries(R.pac).forEach(([pid,s])=>{s.notas.forEach(n=>anc.push({pid,h:lIdent({tipo:'nota',nota:n})}));(s.entrega||[]).forEach(e=>anc.push({pid,h:lIdent({tipo:'entrega',ent:e})}))});
+ const par=X.map((_,i)=>i),f=i=>par[i]===i?i:(par[i]=f(par[i]));
+ for(let i=0;i<X.length;i++)for(let j=i+1;j<X.length;j++)if(lMismo(H[i],H[j]))par[f(j)]=f(i);
+ const G={};X.forEach((x,i)=>{(G[f(i)]=G[f(i)]||[]).push(i)});
+ Object.values(G).forEach(ix=>{const mem=ix.map(i=>X[i]),hs=ix.map(i=>H[i]);let pid=null,motivo='';
+  const seg=new Set();ix.forEach(i=>{const a=LT.asociar(H[i].c,pac);if(a.pid&&a.seguro)seg.add(a.pid);anc.forEach(k=>{if(lMismo(H[i],k.h))seg.add(k.pid)})});
+  if(seg.size===1){pid=[...seg][0];motivo='mismo paciente que otro documento'}
+  const nombres=hs.map(h=>h.c.nombre).filter(Boolean);
+  const conCama=mem.map((x,k)=>({x,h:hs[k]})).filter(o=>o.h.c.cama&&BEDS.includes(o.h.c.cama)).sort((a,b)=>(a.x.tipo==='entrega'?0:a.x.tipo==='hoja'?1:2)-(b.x.tipo==='entrega'?0:b.x.tipo==='hoja'?1:2)||String((b.x.nota||{}).fecha||'').localeCompare(String((a.x.nota||{}).fecha||'')));
+  const cama=conCama.length?conCama[0].h.c.cama:null;let ocupada=null;
+  if(!pid&&!seg.size&&cama){const q=DB.beds[cama]&&DB.patients[DB.beds[cama]];
+   if(q&&q.activo&&(!nombres.length||nombres.some(n=>LT.inicialesCompat(n,q.nombre)))){pid=q.id;motivo='cama '+cama+(nombres.length?' + iniciales':'')}
+   else if(!q&&nombres.length){pid=lNuevo(cama,mem,nombres);motivo='paciente nuevo en cama '+cama+' (creado con iniciales)'}
+   else if(q)ocupada=q}
+  if(!pid&&!seg.size&&nombres.length&&!ocupada){const c=pac.filter(p=>nombres.every(n=>LT.inicialesCompat(n,p.nombre)));if(c.length===1){pid=c[0].id;motivo='iniciales (único compatible): verifica'}}
+  if(pid){ix.forEach(i=>{X[i].hecho=true;const s=lMeter(R,pid,X[i]);s.motivos=s.motivos||new Set();s.motivos.add(motivo)})}
+  else R.grupos.push({items:mem,nombres,cama,ocupada:ocupada&&ocupada.id,conflicto:seg.size>1?[...seg]:null,asig:''})});
+ R.porAsociar=X.filter(x=>!x.hecho)}
+// aplica y genera la evolución de cada paciente con datos; un error en uno no detiene a los demás
+function lAplicarTodo(R){const hoy=todayISO();
+ Object.entries(R.pac).forEach(([pid,s])=>{if(s.aplicado)return;try{lAplicarPaciente(pid,s,hoy);s.aplicado=true}catch(e){s.estado='Error al cargar: '+(e.message||e);s.gen='err';return}
+  try{lGenerar(pid,s)}catch(e){s.gen='err';s.estado=(s.estado||'')+' · No se pudo generar: '+(e.message||e)}});
+ cur.pid=null;saveDB();renderCamas&&renderCamas()}
+function lGenerar(pid,s){const p=DB.patients[pid];const hoy=todayISO();
+ const n0=p.notes.find(x=>x.fecha===hoy&&x.tipo==='evo');
+ if(n0&&n0.texto&&n0.origen!=='lote'){s.gen='propia';s.estado='Ya tenías la evolución de hoy generada: se agregaron las novedades, vuelve a generar al abrirla';return}
+ if(!n0&&!p.notes.some(x=>x.state&&x.tipo!=='imp')){s.gen='sin';s.estado=(s.estado?s.estado+' · ':'')+'Sin evolución previa en la app: ábrela para el ingreso';return}
+ const goO=go,saO=showAlerts;let AL=[];const fp=fotoPend[pid];
+ go=function(){};showAlerts=a=>{AL=a.slice()};
+ try{cur.pid=pid;cur.date=hoy;cur.mode='evo';delete fotoPend[pid];fotoR=null;renderHoja();
+  const hF=[],dF=[];(s.hojas||[]).forEach(h=>{const r=fotoAuto(h.I);h.modo=r.M;hF.push(...r.hecho);dF.push(...r.dud)});
+  const n=impNota();if(n){const MODO=modoDia(hoy);
+   // sin diagnósticos en la app (paciente nuevo): se toman los de la entrega / evolución, numerados
+   const dxP=n.imp.filter(x=>x.sys==='dx'&&(x.estado==='incl'||x.estado==='prop'));if(dxP.length&&!V('dx')){setV('dx',dxP.map((x,i)=>(i+1)+'.- '+x.txt.trim().replace(/^-\s*/,'').replace(/\.$/,'')).join('\n'));dxP.forEach(x=>x.estado='apl')}
+   n.imp.filter(x=>x.tipo==='qtdia'&&x.estado==='prop'&&!V('qt_dia')).forEach(x=>impAplicar(x.id));
+   if(!V('qt_esq'))n.imp.forEach(x=>{const m=x.estado==='aviso'&&x.txt.match(/Tratamiento según la entrega: «(.+?)»/);if(m&&!V('qt_esq')){setV('qt_esq',m[1]);x.estado='apl'}});
+   n.imp.filter(x=>x.estado==='incl').forEach(x=>{
+   if(x.tipo==='qtdia'||x.sys==='lab'||x.sys==='ind'||(x.sys==='pp'&&MODO==='full'))impAplicar(x.id);
+   else if(x.sys==='pp'){for(let i=1;i<=4;i++){if(!V('nov_t'+i)&&el('nov_t'+i)){setV('nov_t'+i,x.txt.trim().replace(/^-\s*/,''));x.estado='apl';break}}}})}
+  if(typeof calcTot==='function')calcTot();
+  generar();const nn=noteOf(false);if(nn){nn.origen='lote';nn.genAuto=Date.now()}
+  if(fp){fp.auto=[...new Set(hF)].join(', ')||'nada';fp.modo=(s.hojas[s.hojas.length-1]||{}).modo;fotoPend[pid]=fp}
+  if(dF.length)AL.push('Foto: '+[...new Set(dF)].join(', ')+'. Revisa con el recorte al abrir la hoja.');
+  if(p.nuevoLote)AL.unshift('Paciente creado automáticamente ('+p.nombre+', '+(p.sexo==='f'?'femenino':'masculino')+'): revisa iniciales y sexo en la ficha.');
+  s.alertas=AL;s.gen='ok';const fx=hF.length?' · foto: '+[...new Set(hF)].join(', '):'';s.estado='Evolución generada'+fx}
+ finally{go=goO;showAlerts=saO;clearTimeout(tSave);tSaveP=false;clearTimeout(window._tF5);clearTimeout(window._tImp);fotoR=null}}
+function lRenderRes(){const R=lRes;if(!R){$('lres').innerHTML='';return}const act=Object.values(DB.patients).filter(p=>p.activo).sort((a,b)=>BEDS.indexOf(a.cama)-BEDS.indexOf(b.cama));
  const libres=BEDS.filter(b=>!DB.beds[b]);let h='';
- const filas=Object.entries(R.pac).sort((a,b)=>BEDS.indexOf(DB.patients[a[0]].cama)-BEDS.indexOf(DB.patients[b[0]].cama)).map(([pid,s])=>{const p=DB.patients[pid];
-  return `<tr><td><b>${esc(p.cama||'—')}</b></td><td>${esc(p.nombre)}</td><td>${s.notas.length} nota(s)${s.labs.length?', '+s.labs.length+' examen(es)':''}${s.hojas.length?', hoja de enfermería':''}${(s.entrega||[]).length?', entrega de turno':''}</td><td class="note">${esc([...s.fuentes].join(', '))}</td><td>${s.estado?esc(s.estado):'—'}</td><td>${s.aplicado?`<button class="btn sm" onclick="abrirHoja('${pid}','evo')">Abrir</button>`:''}</td></tr>`}).join('');
- h+=`<div class="sec"><div class="st">PACIENTES CON DATOS</div><table class="asg"><tr><th>Cama</th><th>Paciente</th><th>Cargado</th><th>Fuentes</th><th>Estado</th><th></th></tr>${filas||'<tr><td colspan="6" class="note">Ninguno todavía.</td></tr>'}</table></div>`;
- if(R.porAsociar.length){h+=`<div class="sec"><div class="st">POR ASOCIAR (no se pudo reconocer al paciente con seguridad)</div><table class="asg"><tr><th>Documento</th><th>Motivo</th><th>Asignar a</th></tr>${R.porAsociar.map((x,i)=>{
-  const d=x.tipo==='nota'?`${esc(x.nota.fuente)} · ${x.nota.cab&&x.nota.cab.nombre?'iniciales '+esc(LT.iniciales(x.nota.cab.nombre)):'sin nombre'}${x.nota.cab&&x.nota.cab.cama?' · cama '+esc(x.nota.cab.cama):''}${x.nota.fecha?' · '+dm(x.nota.fecha):''}`:x.tipo==='lab'?`${esc(x.fuente)} · examen · ${x.nombre?'iniciales '+esc(LT.iniciales(x.nombre)):'sin nombre'}`:x.tipo==='entrega'?`${esc(x.fuente)} · entrega · cama ${esc(x.ent.b.cama||'?')} · ${x.ent.b.nombre?'iniciales '+esc(LT.iniciales(x.ent.b.nombre)):'sin nombre'}`:`${esc(x.fuente)} · foto de hoja de enfermería`;
-  const cn=x.tipo==='nota'?(x.nota.cab||{}).cama:x.tipo==='entrega'?x.ent.b.cama:null;const nuevo=cn&&!DB.beds[cn]?`<option value="nuevo:${cn}"${x.asig==='nuevo:'+cn?' selected':''}>Paciente nuevo en cama ${cn}</option>`:'';
-  return `<tr><td>${d}</td><td class="note">${esc(x.motivo||'')}</td><td><select onchange="lRes.porAsociar[${i}].asig=this.value"><option value="">— no usar —</option>${nuevo}${act.map(p=>`<option value="${p.id}"${(x.asig||x.sug)===p.id?' selected':''}>${p.cama} · ${esc(p.nombre)}</option>`).join('')}</select></td></tr>`}).join('')}</table></div>`}
- if(R.errores.length)h+=`<div class="sec"><div class="st" style="background:var(--rd)">NO SE PUDIERON LEER (el resto sigue normal)</div>${R.errores.map(e=>`<div class="note">✕ ${esc(e.fuente)}: ${esc(e.error)}</div>`).join('')}</div>`;
- h+=`<div class="row" style="margin-top:6px"><button class="btn gr" onclick="lAplicar()">Guardar en fichas y dejar prepicadas</button><button class="btn sec" onclick="lInforme()">Informe de lectura (enmascarado)</button></div>`;
+ const filas=Object.entries(R.pac).filter(([pid])=>DB.patients[pid]).sort((a,b)=>BEDS.indexOf(DB.patients[a[0]].cama)-BEDS.indexOf(DB.patients[b[0]].cama)).map(([pid,s])=>{const p=DB.patients[pid];
+  const carg=[s.notas.length?s.notas.length+' nota(s)':'',s.labs.length?s.labs.length+' examen(es)':'',s.hojas.length?s.hojas.length+' foto(s)':'',(s.entrega||[]).length?'entrega':''].filter(Boolean).join(', ');
+  const col=s.gen==='ok'?'var(--gr)':s.gen==='err'?'var(--rd)':'inherit';const al=(s.alertas||[]);
+  return `<tr><td><b>${esc(p.cama||'—')}</b></td><td>${esc(p.nombre)}${s.motivos?`<div class="note">${esc([...s.motivos].join(' · '))}</div>`:''}</td><td>${carg}</td><td><span style="color:${col}">${esc(s.estado||'—')}</span>${al.length?`<details><summary class="note" style="cursor:pointer">${al.length} aviso(s)</summary>${al.map(a=>`<div class="note">· ${esc(a)}</div>`).join('')}</details>`:''}</td><td><button class="btn sm" onclick="abrirHoja('${pid}','evo')">Abrir</button></td></tr>`}).join('');
+ h+=`<div class="sec"><div class="st">EVOLUCIONES DE HOY</div><table class="asg"><tr><th>Cama</th><th>Paciente</th><th>Cargado</th><th>Resultado</th><th></th></tr>${filas||'<tr><td colspan="5" class="note">Ningún paciente reconocido.</td></tr>'}</table></div>`;
+ if(R.grupos&&R.grupos.length){h+=`<div class="sec"><div class="st" style="background:#b26a00">SIN PACIENTE: elige a quién corresponde cada grupo</div><div class="note">Los documentos del mismo paciente ya están agrupados (por RUT o nombre, comparados en huellas cifradas). Elige el paciente y se carga y genera de inmediato.</div><table class="asg"><tr><th>Grupo</th><th>Asignar a</th><th></th></tr>`;
+  R.grupos.forEach((g,i)=>{const ini=[...new Set(g.nombres.map(n=>LT.iniciales(n)).filter(Boolean))].join(' / ');
+   const docs=g.items.map(x=>`${esc(x.fuente||'')} · ${x.tipo==='nota'?'evolución'+(x.nota.fecha?' '+dm(x.nota.fecha):''):x.tipo==='lab'?'examen':x.tipo==='entrega'?'entrega de turno':'foto de hoja'}`).join('<br>');
+   const oc=g.ocupada&&DB.patients[g.ocupada];
+   const motivo=g.conflicto?'calza con más de un paciente':oc?`la cama ${g.cama} la tiene ${esc(oc.nombre)} en la app, con otras iniciales`:g.cama?'cama '+g.cama:!g.nombres.length?'sin nombre ni cama legibles':'sin cama y sin iniciales únicas';
+   const ops=(oc?`<option value="reempl:${g.cama}">Paciente nuevo en cama ${g.cama} (dar de alta a ${esc(oc.nombre)})</option>`:'')+(g.cama&&!DB.beds[g.cama]?`<option value="nuevo:${g.cama}">Paciente nuevo en cama ${g.cama}</option>`:'')
+    +act.map(p=>`<option value="${p.id}">${p.cama} · ${esc(p.nombre)}</option>`).join('')+(g.nombres.length?libres.filter(b=>b!==g.cama).map(b=>`<option value="nuevo:${b}">Paciente nuevo en cama ${b}</option>`).join(''):'');
+   h+=`<tr><td><b>${ini?'Iniciales '+esc(ini):'Sin nombre'}</b>${g.cama?' · cama '+esc(g.cama):''}<div class="note">${esc(motivo)}</div><div class="note">${docs}</div></td><td><select id="lg_${i}"><option value="">— elegir —</option>${ops}</select></td><td><button class="btn sm" onclick="lAsignarGrupo(${i})">Cargar y generar</button></td></tr>`});
+  h+='</table></div>'}
+ if(R.errores.length)h+=`<div class="sec"><div class="st" style="background:var(--rd)">NO SE PUDIERON LEER (el resto siguió normal)</div>${R.errores.map(e=>`<div class="note">✕ ${esc(e.fuente)}: ${esc(e.error)}</div>`).join('')}</div>`;
+ h+=`<div class="row" style="margin-top:6px"><button class="btn sec" onclick="lInforme()">Informe de lectura (enmascarado)</button></div>`;
  $('lres').innerHTML=h}
-// aplica lo cargado: notas importadas al historial, exámenes, nota de hoy prepicada con novedades
-function lAplicar(){const R=lRes;if(!R)return;const hoy=todayISO();
- R.porAsociar.forEach(x=>{const v=x.asig!==undefined?x.asig:(x.sug||'');if(!v)return;let pid=v;
-  if(v.startsWith('nuevo:')){const cama=v.slice(6);if(DB.beds[cama])return;const cab=x.tipo==='entrega'?x.ent.cab:(x.nota.cab||{});const p={id:uid(),notes:[],labs:[],upd:Date.now(),nombre:LT.iniciales(cab.nombre||'')||'Paciente',sexo:'m',fingreso:(x.tipo==='entrega'?x.ent.b.fingreso:x.nota.fecha)||hoy,falta:null,activo:true,cama};DB.patients[p.id]=p;DB.beds[cama]=p.id;pid=p.id}
-  const s=R.pac[pid]=R.pac[pid]||{notas:[],labs:[],hojas:[],entrega:[],fuentes:new Set()};s.entrega=s.entrega||[];
-  if(x.tipo==='nota'){s.notas.push(x.nota);s.fuentes.add(x.nota.fuente)}else if(x.tipo==='lab'){s.labs.push(x.lab);s.fuentes.add(x.fuente)}else if(x.tipo==='hoja'){s.hojas.push(x.hoja);s.fuentes.add(x.fuente)}else if(x.tipo==='entrega'){s.entrega.push(x.ent);s.fuentes.add('entrega')}x.hecho=true});
- R.porAsociar=R.porAsociar.filter(x=>!x.hecho);
- Object.entries(R.pac).forEach(([pid,s])=>{if(s.aplicado)return;try{lAplicarPaciente(pid,s,hoy);s.aplicado=true}catch(e){s.estado='Error: '+(e.message||e);R.errores.push({fuente:(DB.patients[pid]||{}).cama||pid,error:e.message||String(e)})}});
- saveDB();lRenderRes();renderCamas&&renderCamas()}
+function lAsignarGrupo(i){const R=lRes,g=R&&R.grupos[i];if(!g)return;const v=$('lg_'+i).value;if(!v){alert('Elige el paciente.');return}let pid=v;
+ if(v.startsWith('reempl:')||v.startsWith('nuevo:')){const cama=v.split(':')[1];const q=DB.beds[cama]&&DB.patients[DB.beds[cama]];
+  if(q){if(!v.startsWith('reempl:'))return;if(!confirm(`Se da de alta a ${q.nombre} (cama ${cama}) y se crea el paciente nuevo. ¿Seguir?`))return;q.activo=false;q.falta=todayISO();q.upd=Date.now();DB.beds[cama]=null}
+  pid=lNuevo(cama,g.items,g.nombres.length?g.nombres:['Paciente'])}
+ g.items.forEach(x=>{x.hecho=true;const s=lMeter(R,pid,x);s.motivos=s.motivos||new Set();s.motivos.add('elegido por ti')});
+ R.grupos.splice(i,1);
+ // aprende las huellas para la próxima vez
+ const p=DB.patients[pid];g.items.forEach(x=>{const c=lIdent(x).c;if(c.nombre||c.run)aprenderHuellas(p,c)});
+ const s=R.pac[pid];s.aplicado=false;lAplicarTodo({pac:{[pid]:s}});lRenderRes()}
 function aprenderHuellas(p,cab){if(!cab)return;p.hue=p.hue||{r:[],t:[]};const r=cab.run&&LT.huellaRut(cab.run);if(r&&!p.hue.r.includes(r))p.hue.r.push(r);
  if(cab.nombre)LT.huellaTokens(cab.nombre).forEach(t=>{if(!p.hue.t.includes(t))p.hue.t.push(t)});if(p.hue.t.length>24)p.hue.t=p.hue.t.slice(-24)}
 function lAplicarPaciente(pid,s,hoy){const p=DB.patients[pid];if(!p)throw new Error('paciente no encontrado');
@@ -4079,7 +4162,7 @@ async function fotoMejorLectura(bm,estado){const nota=(I,it)=>(I.sv?100+Object.k
  for(const rot of [0,180,90,270]){const c=fotoLienzo(bm,rot);if(rot&&estado)estado(`Probando la foto girada ${rot}°…`);
   const t0=Date.now();const r=await ocrLeer(c);ms+=Date.now()-t0;if(rot===0)items0=r.items;const J=HematoHoja.interpretar(r.items);
   const de_lado=r.items.length&&r.items.filter(o=>{const xs=o.box.map(p=>p[0]),ys=o.box.map(p=>p[1]);return (Math.max(...ys)-Math.min(...ys))>1.5*(Math.max(...xs)-Math.min(...xs))}).length/r.items.length>0.4;
-  const n=nota(J,r.items)-(de_lado?50:0);if(!best||n>best.n)best={n,I:J,cv:c,rot};
+  const n=nota(J,r.items)-(de_lado?50:0);if(!best||n>best.n)best={n,I:J,cv:c,rot,items:r.items};
   if(J.sv&&!de_lado&&(rot===0||rot===180))break;if(J.bh.length&&J.bh.every(x=>!x.dudaSigno)&&!de_lado)break;
   if(rot===180&&!de_lado&&best.rot===0&&!J.sv&&!J.bh.length&&!best.I.sv&&!best.I.bh.length)continue}
  best.I.ms=ms;best.items0=items0;return best}
@@ -4089,6 +4172,21 @@ async function fotoProcesar(blob){if(!cur.pid)return;const pid=cur.pid;$('foto-p
   if(!I.sv&&!I.bh.length){fotoEstado('No encontré signos vitales ni BH en la foto. Prueba con una foto más derecha y cercana.');return}
   fotoR={I,cv:r.cv,col:null};fotoEstado(`Leída en ${Math.round(I.ms/1000)} s${r.rot?' (girada '+r.rot+'°)':''}. Revisa y aplica.`);fotoRender()}
  catch(e){fotoEstado('No se pudo leer la foto: '+e.message)}}
+
+// aplicación automática (Cargar todo): mismos criterios que el panel, sin tocar nada de lo copiado
+function fotoAuto(I,modo){const M=modo||fotoClasificar(I);const hecho=[],dud=[];const put=(k,v)=>{if(v!=null&&v!=='')setV(k,String(v))};
+ if(I.sv&&M==='hoy'){const cols=I.sv;let k=cols.length-1;while(k>0&&Object.values(cols[k].f).filter(f=>f.v!=null).length<2)k--;const c=cols[k];const g=x=>c.f[x]&&c.f[x].v!=null?c.f[x]:null;
+  const L={fc:'FC',pa:'PA',pam:'PAM',fr:'FR',t:'T°',fio2:'FiO₂',sat:'SatO₂',peso:'peso'};
+  Object.keys(L).forEach(x=>{const f=g(x);if(!f)return;const v=String(f.v);
+   if(x==='pa'){const m=v.match(/(\d{2,3})\s*\/\s*(\d{2,3})/);if(!m)return;put('sv_pas',m[1]);put('sv_pad',m[2])}
+   else put({fc:'sv_fc',pam:'sv_pam',fr:'sv_fr',t:'sv_t',fio2:'sv_fio2',sat:'sv_sat',peso:'sv_peso'}[x],(x==='t'||x==='peso')?v.replace('.',','):v);
+   hecho.push(L[x]+(c.hora?' '+c.hora+':00':''));if(f.d)dud.push(L[x]+' dudoso')})}
+ if(I.sv&&M==='ayer'){const D=[];I.sv.forEach(x=>{if(x.f.diu&&x.f.diu.v!=null)D.push({...x.f.diu,hora:x.hora})});const hayHora=D.some(x=>x.hora);const S=D.filter(x=>x.hora||!hayHora);
+  if(S.length){for(let j=1;j<=6;j++)setV('d'+j,'');let vals=S.map(x=>+x.v);if(vals.length>6){const dia=S.filter(x=>x.hora&&+x.hora>=7&&+x.hora<20).reduce((a,x)=>a+(+x.v),0),noche=vals.reduce((a,v)=>a+v,0)-dia;vals=[dia,noche].filter(Boolean)}
+   vals.forEach((v,i)=>setV('d'+(i+1),String(v)));hecho.push('diuresis 24 h');if(S.some(x=>x.d))dud.push('alguna diuresis dudosa')}}
+ if(M!=='hoy'&&I.bh.length){let i12=0;I.bh.forEach(x=>{const dest=x.h24?'bh24':(i12++===0?'bh1':'bh2');if(x.dudaSigno||!x.signo){dud.push('BH sin signo legible (no se usó)');return}
+   setV(dest,(x.signo==='-'?'-':'')+String(x.v).replace(/\D/g,''));hecho.push(dest==='bh24'?'BH 24 h':'BH 12 h');if(x.d||x.noCuadra)dud.push('BH no cuadra o dudoso')})}
+ return {M,hecho,dud}}
 
 document.addEventListener('click',e=>{const m=$('mas');if(m&&!m.contains(e.target))m.classList.remove('ab')});
 document.addEventListener('click',e=>{if(e.target.closest&&e.target.closest('.mas .menu button'))$('mas').classList.remove('ab')});
