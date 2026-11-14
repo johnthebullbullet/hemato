@@ -476,7 +476,9 @@ root.HematoLote=api;if(typeof module!=='undefined')module.exports=api;
 })(typeof window!=='undefined'?window:globalThis);
 
 </script>
-<title>Hematología Intensiva HGGB · v24</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' blob:; worker-src 'self' blob:; connect-src 'self' blob: data:; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; media-src 'self' blob: data:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<!-- Privacidad: el navegador bloquea cualquier envío de datos a otro servidor. -->
+<title>Hematología Intensiva HGGB · v25</title>
 <script>/**
  * @licstart The following is the entire license notice for the
  * JavaScript code in this page
@@ -594,7 +596,7 @@ body.touch .mono{font-size:14px}
 <body>
 <div class="app">
 <div class="hdr">
-  <div><b>Hematología Intensiva · HGGB</b><br><small>Evolución e ingreso · v24 · funciona sin internet</small></div>
+  <div><b>Hematología Intensiva · HGGB</b><br><small>Evolución e ingreso · v25 · funciona sin internet</small></div>
   <div style="font-size:11px"><select class="modosel" onchange="setModo(this.value)"><option value="full">Planes e indicaciones: completos</option><option value="short">Planes e indicaciones: acortados (FDS / festivo)</option></select> <span id="modo-auto" style="opacity:.7"></span></div>
   <div class="nav">
     <button class="nb prim" id="nav-lote" onclick="go('lote')">⬆ Cargar todo</button>
@@ -3716,17 +3718,6 @@ loadDB();buildSheet();initDrop();renderCamas();syncModo();
 // ═══ FOTO DE LA HOJA DE ENFERMERÍA (lectura local con PaddleOCR) ═══
 let ocrW=null,ocrCB=null,fotoR=null;
 function fotoEstado(t){const e=$('foto-st');if(e)e.textContent=t}
-function ocrWorker(){if(ocrW)return ocrW;
- ocrW=new Worker('ocr/ocr-worker.js');
- ocrW.onmessage=e=>{const d=e.data;
-  if(d.tipo==='avance')fotoEstado(d.texto);
-  else if(d.tipo==='listo')fotoEstado('Lector listo'+(d.hilos>1?' ('+d.hilos+' núcleos)':'')+'.');
-  else if(d.tipo==='error'){fotoEstado('Error: '+d.texto);if(ocrCB){ocrCB.rej(new Error(d.texto));ocrCB=null}}
-  else if(d.tipo==='resultado'&&ocrCB){ocrCB.res(d);ocrCB=null}};
- ocrW.onerror=e=>{fotoEstado('No se pudo iniciar el lector: '+(e.message||'error'));if(ocrCB){ocrCB.rej(new Error('worker'));ocrCB=null}};
- return ocrW}
-function ocrLeer(cv){return new Promise((res,rej)=>{ocrCB={res,rej};const im=cv.getContext('2d').getImageData(0,0,cv.width,cv.height);
- ocrWorker().postMessage({tipo:'leer',rgba:im.data.buffer,w:cv.width,h:cv.height,id:Date.now()},[im.data.buffer])})}
 function fotoElegir(cam){if(location.protocol==='file:'){alert('La lectura de fotos funciona en la app publicada (johnthebullbullet.github.io/hemato), no abriendo el archivo directamente.');return}
  const i=document.createElement('input');i.type='file';i.accept='image/*';if(cam)i.setAttribute('capture','environment');
  i.onchange=()=>{if(i.files[0])fotoProcesar(i.files[0])};i.click()}
@@ -3748,6 +3739,7 @@ function lInit(){const d=$('ldrop');if(!d||d.dataset.ok)return;d.dataset.ok=1;
  d.ondragover=e=>{e.preventDefault();d.classList.add('act')};d.ondragleave=()=>d.classList.remove('act');d.ondrop=e=>{e.preventDefault();d.classList.remove('act');lAddFiles(e.dataTransfer.files)};
  if(location.protocol==='file:'&&$('l-file'))$('l-file').style.display=''; if(!$('l-fpeg').value)$('l-fpeg').value=ayerISO();if(!lPastes.length)lAddPaste();lRender()}
 async function lAddFiles(fl){for(const f of fl){if(lFiles.length>=80)break;const x={name:f.name,type:f.type,file:f};lFiles.push(x);
+  if((/^image\//.test(f.type||'')||/\.(png|jpe?g|heic|webp)$/i.test(f.name))&&location.protocol!=='file:'&&typeof ocrPreparar==='function')ocrPreparar().catch(()=>{});
   if(/\.xlsx$/i.test(f.name)){try{x.hojas=await LT.xlsxHojas(await f.arrayBuffer());x.hoja=LT.hojaDelDia(x.hojas,todayISO())}catch(e){x.err=e.message}}}lRender()}
 function lAddPaste(){lPastes.push({cama:'',texto:''});lRender()}
 function lCamasOpts(sel){const act=Object.values(DB.patients).filter(p=>p.activo&&p.cama).sort((a,b)=>BEDS.indexOf(a.cama)-BEDS.indexOf(b.cama));
@@ -3772,8 +3764,9 @@ async function docTexto(f,estado){const name=f.name||'archivo';const buf=await f
   return {texto:partes.join('\n\n'),ocr:true,buf}}
  if(/^image\//.test(f.type)||/\.(png|jpe?g|heic|webp)$/i.test(name)){if(location.protocol==='file:')throw new Error('las imágenes se leen en la app publicada');
   const bm=await fotoBitmap(f);estado&&estado(`${name}: leyendo imagen…`);const r=await fotoMejorLectura(bm,t=>estado&&estado(name+': '+t));
-  if(r.I.sv||r.I.bh.length){let cab={};try{cab=cabFoto(await lineasOCR(r.items||r.items0||[]))}catch(e){}return {hoja:{I:r.I,cv:r.cv},cab,ocr:true}}
-  return {texto:await lineasOCR(r.items0||[]),ocr:true}}
+  const det=`orientación ${r.orient?r.orient.rot+'°'+(r.orient.seguro?'':' (dudosa)'):'sin muestra'} · lecturas ${r.nLect} · ${(r.I.ms/1000).toFixed(1)} s`;
+  if(r.I.sv||r.I.bh.length){let cab={};try{cab=cabFoto(await lineasOCR(r.items||r.items0||[]))}catch(e){}return {hoja:{I:r.I,cv:r.cv},cab,det,ocr:true}}
+  return {texto:await lineasOCR(r.items||r.items0||[]),det,ocr:true}}
  if(/\.docx$/i.test(name))return {texto:await docxTexto(buf)};
  return {texto:new TextDecoder('utf-8').decode(buf)}}
 // encabezado impreso de la hoja (INDICACIONES MÉDICAS): SALA / CAMA / PACIENTE / RUT; la fecha escrita no se usa
@@ -3788,39 +3781,47 @@ function notasDeDoc(texto,fuente,orden,pegado){const brutas=pegado?LT.partirNota
  return brutas.map((b,i)=>{const cab={...cab0,...LT.cabecera(b.texto)};return {texto:limpiarSIRYC(b.texto).replace(/^Paciente:[^\n]*\n*/,''),crudo:b.texto,fecha:cab.fecha||null,hora:cab.hora||b.hora||null,cab,fuente,marca:b.marca,orden:orden*100+i}})}
 function lPacientes(){return Object.values(DB.patients).filter(p=>p.activo).map(p=>({id:p.id,cama:p.cama,nombre:p.nombre,hue:p.hue}))}
 async function lProcesar(){if(!lFiles.length&&!lPastes.some(x=>x.texto.trim())){alert('Agrega archivos o texto.');return}
- $('lgo').disabled=true;$('lres').innerHTML='';const R={pac:{},porAsociar:[],errores:[],docs:[],grupos:[]};const hoy=todayISO(),fpeg=$('l-fpeg').value||ayerISO();const pac=lPacientes();
+ $('lgo').disabled=true;$('lres').innerHTML='';const R={pac:{},porAsociar:[],errores:[],docs:[],grupos:[],tiempos:[]};const hoy=todayISO(),fpeg=$('l-fpeg').value||ayerISO();const pac=lPacientes();
  const slot=pid=>R.pac[pid]=R.pac[pid]||{notas:[],labs:[],hojas:[],entrega:[],fuentes:new Set()};
- const asignar=(nota,pidFijo)=>{let a=pidFijo?{pid:pidFijo,motivo:'elegido',seguro:true}:LT.asociar(nota.cab||{},pac);
+ const asignar=(nota,pidFijo)=>{let a=pidFijo?{pid:pidFijo,motivo:'elegido',seguro:true}:LT.asociar(nota.cab||{},lPacientes());
   if(a.pid&&a.seguro){slot(a.pid).notas.push(nota);slot(a.pid).fuentes.add(nota.fuente);return}
   R.porAsociar.push({tipo:'nota',nota,sug:a.pid,motivo:a.motivo,fuente:nota.fuente})};
- let k=0;
- try{
- for(const f of lFiles){k++;lEstado(`Leyendo ${k} de ${lFiles.length}: ${f.name}`);
+ const esImg=f=>/^image\//.test(f.type||'')||/\.(png|jpe?g|heic|webp)$/i.test(f.name);
+ const uno=async(f,k)=>{const t0=Date.now();
   try{if(/\.xlsx$/i.test(f.name)){if(f.err)throw new Error(f.err);const hj=f.hojas[f.hoja];const fh=LT.hojaFecha(hj.nombre,hoy)||fpeg;const B=LT.entregaBloques(hj.filas,hoy);
     if(!B.length)throw new Error('no encontré bloques con "SALA:" en la hoja '+hj.nombre);
     R.docs.push({fuente:f.name+' · hoja '+hj.nombre,tipo:'entrega de turno',filas:hj.filas,bloques:B});
     B.forEach(b=>{const cab={nombre:b.nombre,run:b.run,cama:b.cama};const ent={b,fechaHoja:fh,fuente:f.name,cab};
      if(!b.nombre&&!b.run&&!Object.keys(b.campos).length)return; // cama vacía en la planilla
-     const a=LT.asociar(cab,pac);if(a.pid&&a.seguro){slot(a.pid).entrega.push(ent);slot(a.pid).fuentes.add('entrega '+hj.nombre)}else R.porAsociar.push({tipo:'entrega',ent,sug:a.pid,motivo:a.motivo,fuente:f.name})});continue}
-   const d=await docTexto(f.file,lEstado);
-   if(d.hoja){const cab={cama:d.cab&&d.cab.cama||null,nombre:d.cab&&d.cab.nombre||null,run:d.cab&&d.cab.run||null};R.porAsociar.push({tipo:'hoja',hoja:d.hoja,cab,fuente:f.name,sug:null,motivo:cab.cama?'encabezado de la hoja: cama '+cab.cama:'foto sin encabezado legible'});R.docs.push({fuente:f.name,tipo:'hoja de enfermería',texto:''});continue}
+     const a=LT.asociar(cab,lPacientes());if(a.pid&&a.seguro){slot(a.pid).entrega.push(ent);slot(a.pid).fuentes.add('entrega '+hj.nombre)}else R.porAsociar.push({tipo:'entrega',ent,sug:a.pid,motivo:a.motivo,fuente:f.name})});return}
+   const d=await docTexto(f.file,t=>lEstado(lPre+t));
+   if(d.det)R.tiempos.push({fuente:f.name+' (detalle)',s:0,det:d.det});
+   if(d.hoja){const cab={cama:d.cab&&d.cab.cama||null,nombre:d.cab&&d.cab.nombre||null,run:d.cab&&d.cab.run||null};R.porAsociar.push({tipo:'hoja',hoja:d.hoja,cab,fuente:f.name,sug:null,motivo:cab.cama?'encabezado de la hoja: cama '+cab.cama:'foto sin encabezado legible'});R.docs.push({fuente:f.name,tipo:'hoja de enfermería',texto:''});return}
    if(esLab(d.texto)){if(!d.buf)throw new Error('examen sin PDF');const r=await procesarArchivo(f.name,d.buf.slice(0));const cab=LT.cabecera(d.texto);
-    const a=LT.asociar({nombre:r.name||cab.nombre,run:cab.run},pac);const pid=a.pid&&a.seguro?a.pid:null;
+    const a=LT.asociar({nombre:r.name||cab.nombre,run:cab.run},lPacientes());const pid=a.pid&&a.seguro?a.pid:null;
     R.docs.push({fuente:f.name,tipo:'examen',texto:d.texto});
-    if(pid){slot(pid).labs.push(r);slot(pid).fuentes.add(f.name)}else R.porAsociar.push({tipo:'lab',lab:r,fuente:f.name,nombre:r.name||cab.nombre,run:cab.run,sug:a.pid,motivo:a.motivo});continue}
+    if(pid){slot(pid).labs.push(r);slot(pid).fuentes.add(f.name)}else R.porAsociar.push({tipo:'lab',lab:r,fuente:f.name,nombre:r.name||cab.nombre,run:cab.run,sug:a.pid,motivo:a.motivo});return}
    const notas=notasDeDoc(d.texto,f.name,k);R.docs.push({fuente:f.name,tipo:'evolución'+(d.ocr?' (leída por imagen)':''),texto:d.texto,ocr:d.ocr});
    if(!notas.length)throw new Error('sin texto reconocible');
    notas.forEach(n=>{if(!n.fecha){n.fecha=fpeg;n.sinFecha=true}asignar(n)})}
-  catch(e){R.errores.push({fuente:f.name,error:e.message||String(e)})}}
+  catch(e){R.errores.push({fuente:f.name,error:e.message||String(e)})}
+  finally{R.tiempos.push({fuente:f.name,s:Math.round((Date.now()-t0)/100)/10})}};
+ const cerrar=()=>{try{lResolver(R)}catch(e){R.errores.push({fuente:'asignación automática',error:e.message||String(e)})}lAplicarTodo(R)};
+ const resumen=()=>{const nG=Object.values(R.pac).filter(s=>s.gen==='ok').length,nS=R.grupos.length;return `${nG} evolución(es) generada(s)${nS?`, ${nS} grupo(s) sin paciente (abajo)`:''}${R.errores.length?`, ${R.errores.length} archivo(s) sin leer`:''}`};
+ let lPre='';const A=lFiles.filter(f=>!esImg(f)),B=lFiles.filter(esImg);
+ lRes=R;window.ocrMsg=t=>lEstado(lPre+t);
+ try{
+ // 1) documentos, entrega y texto: las evoluciones quedan listas sin esperar las fotos
+ for(let k=0;k<A.length;k++){lPre=`Leyendo ${k+1} de ${A.length}: ${A[k].name} · `;lEstado(lPre);await uno(A[k],k+1)}
  lPastes.forEach((x,i)=>{if(!x.texto.trim())return;const fuente='Texto '+(i+1);try{
   const ns=notasDeDoc(x.texto,fuente,1000+i,true);R.docs.push({fuente,tipo:'texto pegado',texto:x.texto});
   ns.forEach(n=>{if(!n.cab.fecha){n.fecha=fpeg;n.sinFecha=true}if(!n.hora)n.posterior=true;asignar(n,x.cama||null)})}catch(e){R.errores.push({fuente,error:e.message})}});
- lRes=R;lEstado('Asignando a cada paciente…');
- try{lResolver(R)}catch(e){R.errores.push({fuente:'asignación automática',error:e.message||String(e)})}
- lEstado('Generando evoluciones…');lAplicarTodo(R);
- const nG=Object.values(R.pac).filter(s=>s.gen==='ok').length,nS=R.grupos.length;
- lEstado(`Listo: ${nG} evolución(es) generada(s)${nS?`, ${nS} grupo(s) de documentos sin paciente (abajo)`:''}${R.errores.length?`, ${R.errores.length} archivo(s) sin leer`:''}.`)}
- finally{$('lgo').disabled=false;lRenderRes()}}
+ lEstado('Generando evoluciones…');cerrar();lRenderRes();
+ // 2) fotos, una por una; cada paciente se actualiza apenas termina su foto
+ for(let k=0;k<B.length;k++){lPre=`Evoluciones listas (${resumen()}). Foto ${k+1} de ${B.length}: `;lEstado(lPre+'iniciando lector…');
+  await uno(B[k],500+k);cerrar();lRenderRes()}
+ lEstado(`Listo: ${resumen()}.`)}
+ finally{window.ocrMsg=null;$('lgo').disabled=false;lRenderRes()}}
 function lMeter(R,pid,x){const s=R.pac[pid]=R.pac[pid]||{notas:[],labs:[],hojas:[],entrega:[],fuentes:new Set()};s.entrega=s.entrega||[];
  if(x.tipo==='nota'){s.notas.push(x.nota);s.fuentes.add(x.nota.fuente)}else if(x.tipo==='lab'){s.labs.push(x.lab);s.fuentes.add(x.fuente)}else if(x.tipo==='hoja'){s.hojas.push(x.hoja);s.fuentes.add(x.fuente)}else if(x.tipo==='entrega'){s.entrega.push(x.ent);s.fuentes.add('entrega')}
  s.aplicado=false;s.gen=null;return s}
@@ -3983,6 +3984,7 @@ function aplicarInferido(st,inf){CLIN_KEYS.forEach(k=>delete st[k]);delete st.t_
 function lInforme(){const R=lRes;if(!R)return;let out=['INFORME DE LECTURA (enmascarado: letras→x, números→9; solo quedan palabras de estructura)',''];
  R.docs.forEach(d=>{out.push('=== '+LT.enmascarar(d.fuente)+' · '+d.tipo+' ===');if(d.bloques){d.bloques.forEach(b=>{out.push(`[bloque] fila ${b.fila} · cama ${b.cama||'?'} · nombre ${b.nombre?'sí':'no'} · RUT ${b.run?'sí':'no'} · ingreso ${b.fingreso?'sí':'no'} · inicio QT ${b.fqt?'sí':'no'} · día QT ${b.diaqt!=null?'sí':'no'} · ATB ${LT.enmascarar(b.atbTexto||'—')}`);Object.entries(b.campos).forEach(([k,v])=>out.push(('['+k+']').padEnd(16)+LT.enmascarar(v.replace(/\n/g,' ⏎ '))));if(b.extra.length)out.push('[otras celdas]  '+LT.enmascarar(b.extra.join(' | ')))});out.push('[filas de la hoja] '+d.filas.length);d.filas.slice(0,12).forEach((f,i)=>out.push(('  fila '+(i+1)).padEnd(10)+(f||[]).map(c=>LT.enmascarar(String(c??''))).join(' | ')))}if(d.texto){const {L,lab}=clasificarNota(d.texto,{});L.forEach((l,i)=>{if(lab[i]==='blank')return;out.push(('['+lab[i]+']').padEnd(7)+LT.enmascarar(l))})}out.push('')});
  R.errores.forEach(e=>out.push('ERROR '+LT.enmascarar(e.fuente)+': '+e.error));
+ out.push('','TIEMPOS ('+navigator.userAgent.replace(/\s+/g,' ').slice(0,120)+')');(R.tiempos||[]).forEach(t=>out.push(String(t.s).padStart(6)+' s  '+LT.enmascarar(t.fuente)+(t.det?'  · '+t.det:'')));
  $('mi-txt').value=out.join('\n');abrir('m-inf')}
 // ═══ HOJA: novedades importadas, pendientes, copiado de ayer, reglas ═══
 const SYS_N={cond:'Condición',qt:'Tratamiento / QT',hem:'Hematológico',est:'Estudios, IC y pendientes',inf:'Infeccioso',neu:'Neurológico',hd:'Hemodinamia',resp:'Respiratorio',ren:'Renal',dig:'Digestivo / VO',otro:'Otros',dx:'Diagnósticos',pp:'Planes',ind:'Indicaciones',lab:'Exámenes',ef:'Examen físico'};
@@ -4158,14 +4160,19 @@ function fotoLienzo(bm,rot){const W=bm.width,H=bm.height,mx=Math.max(W,H)>=2400?
  if(rot===90){c.width=h;c.height=w;g.translate(0,w);g.rotate(-Math.PI/2)}else if(rot===270){c.width=h;c.height=w;g.translate(h,0);g.rotate(Math.PI/2)}else if(rot===180){c.width=w;c.height=h;g.translate(w,h);g.rotate(Math.PI)}else{c.width=w;c.height=h}
  g.drawImage(bm,0,0,w,h);return c}
 async function fotoMejorLectura(bm,estado){const nota=(I,it)=>(I.sv?100+Object.keys(I.sv).length:0)+I.bh.filter(x=>x.cuadra).length*20+I.bh.length*5+(it.length?10*it.reduce((a,o)=>a+o.score,0)/it.length:0);
- let best=null,ms=0,items0=null;
- for(const rot of [0,180,90,270]){const c=fotoLienzo(bm,rot);if(rot&&estado)estado(`Probando la foto girada ${rot}°…`);
-  const t0=Date.now();const r=await ocrLeer(c);ms+=Date.now()-t0;if(rot===0)items0=r.items;const J=HematoHoja.interpretar(r.items);
-  const de_lado=r.items.length&&r.items.filter(o=>{const xs=o.box.map(p=>p[0]),ys=o.box.map(p=>p[1]);return (Math.max(...ys)-Math.min(...ys))>1.5*(Math.max(...xs)-Math.min(...xs))}).length/r.items.length>0.4;
-  const n=nota(J,r.items)-(de_lado?50:0);if(!best||n>best.n)best={n,I:J,cv:c,rot,items:r.items};
-  if(J.sv&&!de_lado&&(rot===0||rot===180))break;if(J.bh.length&&J.bh.every(x=>!x.dudaSigno)&&!de_lado)break;
-  if(rot===180&&!de_lado&&best.rot===0&&!J.sv&&!J.bh.length&&!best.I.sv&&!best.I.bh.length)continue}
- best.I.ms=ms;best.items0=items0;return best}
+ const t0=Date.now();const c0=fotoLienzo(bm,0);let best=null,n=0,o=null;
+ const eval_=(items,c,rot)=>{const J=HematoHoja.interpretar(items);
+  const de_lado=items.length&&items.filter(q=>{const xs=q.box.map(p=>p[0]),ys=q.box.map(p=>p[1]);return (Math.max(...ys)-Math.min(...ys))>1.5*(Math.max(...xs)-Math.min(...xs))}).length/items.length>0.4;
+  const sc=nota(J,items)-(de_lado?50:0);if(!best||sc>best.n)best={n:sc,I:J,cv:c,rot,items};return {J,de_lado}};
+ // 1) una lectura con orientación automática (detector + muestra corta derecho / de cabeza)
+ try{estado&&estado('Leyendo la foto…');const r=await ocrLeerAuto(c0);n++;o=r.orient;o.ms=r.ms;eval_(r.items,r.rot?fotoLienzo(bm,r.rot):c0,r.rot)}
+ catch(e){if(/superó|reiniciado|no terminó|publicada/.test(e.message))throw e}
+ // 2) solo si no salió nada y la orientación fue dudosa: probar las demás orientaciones como antes
+ const legible=best&&best.items.length>=8&&best.items.reduce((a,q)=>a+q.score,0)/best.items.length>=0.85; // texto bien leído: la orientación era correcta, no es una hoja
+ if(!best||(!best.I.sv&&!best.I.bh.length&&!(o&&o.seguro)&&!legible)){for(const rot of [0,180,90,270]){if(best&&rot===best.rot)continue;if(best&&Date.now()-t0>60000)break; // tope: una foto sin hoja reconocible no puede trabar la carga
+ const c=rot===0?c0:fotoLienzo(bm,rot);estado&&estado(`Probando la foto girada ${rot}°…`);
+  const r=await ocrLeer(c);n++;const {J,de_lado}=eval_(r.items,c,rot);if(J.sv&&!de_lado)break;if(J.bh.length&&J.bh.every(x=>!x.dudaSigno)&&!de_lado)break}}
+ best.I.ms=Date.now()-t0;best.items0=best.items;best.orient=o;best.nLect=n;return best}
 async function fotoProcesar(blob){if(!cur.pid)return;const pid=cur.pid;$('foto-panel').style.display='none';
  try{const bm=await fotoBitmap(blob);const r=await fotoMejorLectura(bm,fotoEstado);const I=r.I;
   if(cur.pid!==pid){fotoEstado('Cambiaste de paciente: la lectura se descartó.');return}
@@ -4187,6 +4194,31 @@ function fotoAuto(I,modo){const M=modo||fotoClasificar(I);const hecho=[],dud=[];
  if(M!=='hoy'&&I.bh.length){let i12=0;I.bh.forEach(x=>{const dest=x.h24?'bh24':(i12++===0?'bh1':'bh2');if(x.dudaSigno||!x.signo){dud.push('BH sin signo legible (no se usó)');return}
    setV(dest,(x.signo==='-'?'-':'')+String(x.v).replace(/\D/g,''));hecho.push(dest==='bh24'?'BH 24 h':'BH 12 h');if(x.d||x.noCuadra)dud.push('BH no cuadra o dudoso')})}
  return {M,hecho,dud}}
+
+// ═══ lector: carga con avance visible, tiempo máximo por lectura y reinicio si se cuelga ═══
+let ocrListoP=null,ocrListoCB=null;window.ocrMsg=null;
+function ocrAvisar(t){fotoEstado(t);if(window.ocrMsg)try{window.ocrMsg(t)}catch(e){}}
+function ocrWorker(){if(ocrW)return ocrW;
+ ocrW=new Worker('ocr/ocr-worker-v2.js');
+ ocrW.onmessage=e=>{const d=e.data;
+  if(d.tipo==='avance')ocrAvisar(d.texto);
+  else if(d.tipo==='listo'){ocrAvisar('Lector listo'+(d.hilos>1?' ('+d.hilos+' núcleos)':'')+'.');if(ocrListoCB){ocrListoCB.res();ocrListoCB=null}}
+  else if(d.tipo==='error'){ocrAvisar('Error del lector: '+d.texto);const er=new Error(d.texto);if(ocrListoCB){ocrListoCB.rej(er);ocrListoCB=null}ocrListoP=null;if(ocrCB){ocrCB.rej(er);ocrCB=null}}
+  else if(d.tipo==='resultado'&&ocrCB){ocrCB.res(d);ocrCB=null}};
+ ocrW.onerror=e=>{const er=new Error('no se pudo iniciar el lector: '+(e.message||'error'));ocrAvisar(er.message);if(ocrListoCB){ocrListoCB.rej(er);ocrListoCB=null}ocrListoP=null;if(ocrCB){ocrCB.rej(er);ocrCB=null}};
+ return ocrW}
+function ocrReiniciar(){try{ocrW&&ocrW.terminate()}catch(e){}ocrW=null;ocrListoP=null;const er=new Error('lector reiniciado');if(ocrListoCB){ocrListoCB.rej(er);ocrListoCB=null}if(ocrCB){ocrCB.rej(er);ocrCB=null}}
+function ocrPreparar(){if(location.protocol==='file:')return Promise.reject(new Error('las fotos y los PDF escaneados se leen en la app publicada'));
+ if(ocrListoP)return ocrListoP;
+ const P=new Promise((res,rej)=>{const cb={res:()=>{clearTimeout(t);res()},rej:e=>{clearTimeout(t);rej(e)}};ocrListoCB=cb;ocrWorker().postMessage({tipo:'preparar'});
+  const t=setTimeout(()=>{if(ocrListoCB===cb){ocrListoCB=null;ocrReiniciar();rej(new Error('el lector no terminó de cargar en 10 min (la primera vez descarga unos 100 MB)'))}},600000)});
+ ocrListoP=P;P.catch(()=>{if(ocrListoP===P)ocrListoP=null});return P}
+function ocrPedir(m,cv,ms){return ocrPreparar().then(()=>new Promise((res,rej)=>{const im=cv.getContext('2d').getImageData(0,0,cv.width,cv.height);
+ const cb={res:d=>{clearTimeout(t);res(d)},rej:e=>{clearTimeout(t);rej(e)}};ocrCB=cb;
+ const t=setTimeout(()=>{if(ocrCB===cb){ocrCB=null;ocrReiniciar();rej(new Error('la lectura superó '+Math.round(ms/1000)+' s y se canceló'))}},ms);
+ ocrWorker().postMessage({...m,rgba:im.data.buffer,w:cv.width,h:cv.height,id:Date.now()},[im.data.buffer])}))}
+function ocrLeer(cv){return ocrPedir({tipo:'leer'},cv,150000)}
+function ocrLeerAuto(cv){return ocrPedir({tipo:'leerAuto'},cv,180000)}
 
 document.addEventListener('click',e=>{const m=$('mas');if(m&&!m.contains(e.target))m.classList.remove('ab')});
 document.addEventListener('click',e=>{if(e.target.closest&&e.target.closest('.mas .menu button'))$('mas').classList.remove('ab')});

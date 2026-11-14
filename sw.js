@@ -1,18 +1,21 @@
 // Hemato HGGB · service worker · cambiar VERSION en cada actualización de la app.
 // Los archivos del lector de fotos (carpeta ocr/) van en su propio caché y se descargan una sola vez;
 // cambiar OCR_CACHE solo si cambian los modelos o el motor.
-const VERSION='hemato-v24';
+const VERSION='hemato-v25';
 const OCR_CACHE='hemato-ocr-1';
-const FILES=['./','./index.html','./manifest.webmanifest','./icon-192.png','./icon-512.png','./ocr/hoja.js','./lote.js'];
+const FILES=['./','./index.html','./manifest.webmanifest','./icon-192.png','./icon-512.png','./ocr/hoja.js','./lote.js','./ocr/ocr-worker-v2.js','./ocr/ocr-core-v2.js'];
 self.addEventListener('install',e=>{e.waitUntil(caches.open(VERSION).then(c=>c.addAll(FILES)));self.skipWaiting()});
 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==VERSION&&x!==OCR_CACHE).map(x=>caches.delete(x)))));self.clients.claim()});
 // Aislamiento entre orígenes: permite que el lector use varios núcleos del dispositivo.
+// Privacidad: Content-Security-Policy impide que la app o el lector envíen datos a otro servidor.
 function aislar(r){if(!r||r.status===0||r.type==='opaque')return r;const h=new Headers(r.headers);
  h.set('Cross-Origin-Opener-Policy','same-origin');h.set('Cross-Origin-Embedder-Policy','require-corp');h.set('Cross-Origin-Resource-Policy','same-origin');
+ h.set('Content-Security-Policy',"default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' blob:; worker-src 'self' blob:; connect-src 'self' blob: data:; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; media-src 'self' blob: data:; object-src 'none'; base-uri 'none'; form-action 'none'");
  return new Response(r.body,{status:r.status,statusText:r.statusText,headers:h})}
 self.addEventListener('fetch',e=>{const req=e.request;if(req.method!=='GET')return;
  const url=new URL(req.url);if(url.origin!==self.location.origin)return;
- const esOCR=/\/ocr\/[^/]+$/.test(url.pathname)&&!/\/ocr\/hoja\.js$/.test(url.pathname);
+ // solo lo pesado y estable va primero al caché (modelos, motor wasm, OpenCV); el código del lector se actualiza normal
+ const esOCR=/\/ocr\/(.+\.(onnx|wasm|mjs)|opencv\.js|clipper\.js|ort\.wasm\.min\.js|dict\.txt)$/.test(url.pathname);
  if(esOCR){ // primero caché: los modelos pesan ~100 MB
   e.respondWith(caches.open(OCR_CACHE).then(c=>c.match(req,{ignoreSearch:true}).then(hit=>hit?aislar(hit):fetch(req).then(r=>{if(r.ok)c.put(req,r.clone());return aislar(r)}))));return}
  e.respondWith(fetch(req).then(r=>{const cp=r.clone();caches.open(VERSION).then(c=>c.put(req,cp));return aislar(r)})
